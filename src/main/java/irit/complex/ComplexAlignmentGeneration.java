@@ -5,7 +5,6 @@ import irit.complex.answer.PairAnswer;
 import irit.complex.answer.SingleAnswer;
 import irit.complex.subgraphs.*;
 import irit.dataset.DatasetManager;
-import irit.misc.Progress;
 import irit.output.OutputManager;
 import irit.resource.IRI;
 import irit.resource.Resource;
@@ -17,7 +16,6 @@ import irit.sparql.query.exception.SparqlQueryMalFormedException;
 import irit.sparql.query.select.SparqlSelect;
 import org.apache.jena.rdf.model.RDFNode;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -34,9 +32,12 @@ public class ComplexAlignmentGeneration {
         System.out.println("CanardE");
         System.out.println("===============================================================================");
 
-        String datasets = "/home/guilherme/IdeaProjects/conference-dataset-population-elodie/populated_datasets/data_100";
-        String source = "cmt_100.ttl";
-        String target = "conference_100.ttl";
+        String datasets = args[0];
+        String needs = args[1];
+        String embeddings = args[2];
+        String source = args[3];
+        String target = args[4];
+        String range = args[5];
 
         Set<String> stringSet = Set.of(source, target);
 
@@ -52,8 +53,6 @@ public class ComplexAlignmentGeneration {
         }
 
         System.out.println("Found " + ds.size() + " datasets.");
-
-        String needs = "/home/guilherme/IdeaProjects/ComplexAlignmentGenerator/needs";
 
         Map<String, String> nd = new HashMap<>();
         Map<String, List<SparqlSelect>> cqas = new HashMap<>();
@@ -85,8 +84,6 @@ public class ComplexAlignmentGeneration {
                 }
 
 
-
-
             });
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -97,7 +94,10 @@ public class ComplexAlignmentGeneration {
             System.out.println("⚠️ Not found CQAs for " + s + ".");
         }
 
-        String embeddings = "/home/guilherme/Documents/canard/run/glove";
+        System.out.println("Needs loaded.");
+
+        System.out.println("Loading embeddings.");
+
         Map<String, String[]> embs = new HashMap<>();
         try {
             Files.walk(Paths.get(embeddings), 1).forEach(path -> {
@@ -113,15 +113,6 @@ public class ComplexAlignmentGeneration {
             throw new RuntimeException(e);
         }
 
-        String range = "0:1.1:0.1";
-
-        String[] split = range.split(":");
-
-        List<Float> ths = new ArrayList<>();
-
-        for (float th = Float.parseFloat(split[0]); th <= Float.parseFloat(split[1]); th += Float.parseFloat(split[2])) {
-            ths.add(th);
-        }
 
         embs.forEach((name, paths) -> {
             try {
@@ -150,15 +141,18 @@ public class ComplexAlignmentGeneration {
         });
 
 
+        String[] split = range.split(":");
 
-        int tc = 1;
-//        ExecutorService executorService = Executors.newFixedThreadPool(tc);
+        List<Float> ths = new ArrayList<>();
+
+        for (float th = Float.parseFloat(split[0]); th <= Float.parseFloat(split[1]); th += Float.parseFloat(split[2])) {
+            ths.add(th);
+        }
 
         String output = "output";
 
         for (String[] datasetArg : datasetArgs) {
             run(datasetArg[0], datasetArg[1], cqas.get(datasetArg[0]), ths, 10, false, output);
-//            progress.step();
         }
 
 
@@ -168,8 +162,6 @@ public class ComplexAlignmentGeneration {
     public static void run(String sourceEndpoint, String targetEndpoint, List<SparqlSelect> queries, List<Float> th, int maxMatches, boolean reassess, String outputPath) throws SparqlEndpointUnreachableException, SparqlQueryMalFormedException, ExecutionException, InterruptedException, IncompleteSubstitutionException {
         OutputManager outputManager = new OutputManager();
         outputManager.initOutputEdoal(sourceEndpoint, targetEndpoint, th, outputPath);
-
-
 
 
         for (SparqlSelect sq : queries) {
