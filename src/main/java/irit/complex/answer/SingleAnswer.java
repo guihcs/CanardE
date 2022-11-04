@@ -56,15 +56,6 @@ public class SingleAnswer extends Answer {
 
         HashSet<String> queryLabels = query.getLabels();
 
-        INDArray zeros = Nd4j.zeros(DataType.DOUBLE, EmbeddingManager.embshape);
-
-        for (String queryLabel : queryLabels) {
-            zeros = zeros.add(EmbeddingManager.get(queryLabel));
-        }
-
-        zeros = zeros.div(queryLabels.size());
-
-
 
         double maxSim = -1;
         Triple bestTriple = new Triple();
@@ -81,10 +72,9 @@ public class SingleAnswer extends Answer {
                 for (Triple t : iri.getTriples()) {
 
                     double similarity = 0;
-//                    t.retrieveIRILabels(targetEndpoint);
-//                    t.retrieveTypes(targetEndpoint);
-//                    similarity += t.compareLabel(queryLabels, similarityThreshold, targetEndpoint);
-                    similarity += t.compareSim(zeros, similarityThreshold);
+                    t.retrieveIRILabels(targetEndpoint);
+                    t.retrieveTypes(targetEndpoint);
+                    similarity += t.compareLabel(queryLabels, similarityThreshold, targetEndpoint);
 
                     if (similarity > maxSim) {
                         maxSim = similarity;

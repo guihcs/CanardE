@@ -8,16 +8,19 @@ import irit.dataset.DatasetManager;
 import irit.output.OutputManager;
 import irit.resource.IRI;
 import irit.resource.Resource;
-import irit.similarity.EmbeddingManager;
 import irit.sparql.exceptions.IncompleteSubstitutionException;
 import irit.sparql.SparqlProxy;
 import irit.sparql.query.exception.SparqlEndpointUnreachableException;
 import irit.sparql.query.exception.SparqlQueryMalFormedException;
 import irit.sparql.query.select.SparqlSelect;
+import net.sourceforge.argparse4j.ArgumentParsers;
+import net.sourceforge.argparse4j.impl.Arguments;
+import net.sourceforge.argparse4j.inf.ArgumentParser;
+import net.sourceforge.argparse4j.inf.ArgumentParserException;
+import net.sourceforge.argparse4j.inf.Namespace;
 import org.apache.jena.rdf.model.RDFNode;
 
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.*;
@@ -26,140 +29,120 @@ import java.util.concurrent.*;
 public class ComplexAlignmentGeneration {
 
 
-    public static void main(String[] args) throws SparqlEndpointUnreachableException, SparqlQueryMalFormedException, ExecutionException, InterruptedException, IncompleteSubstitutionException {
+    public static void main(String[] args) throws SparqlEndpointUnreachableException, SparqlQueryMalFormedException, ExecutionException, InterruptedException, IncompleteSubstitutionException, IOException {
 
-        System.out.println("===============================================================================");
-        System.out.println("CanardE");
-        System.out.println("===============================================================================");
 
-        String datasets = args[0];
-        String needs = args[1];
-        String embeddings = args[2];
-        String source = args[3];
-        String target = args[4];
-        String range = args[5];
+        ArgumentParser parser = buildArgumentParser();
 
-        Set<String> stringSet = Set.of(source, target);
-
-        Map<String, String> ds = new HashMap<>();
 
         try {
-            Files.walk(Paths.get(datasets), 1).forEach(path -> {
-                if (!path.toString().endsWith(".ttl") && !stringSet.contains(path.getFileName().toString())) return;
-                ds.put(path.getFileName().toString().split("_")[0], path.toString());
-            });
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+            Namespace res = parser.parseArgs(args);
+            String source = res.get("source");
+            String target = res.get("target");
+            String cqa = res.get("cqa");
+            String range = res.get("range");
+            String output = res.get("output");
+            boolean silent = res.get("silent");
+            int maxMatches = res.get("maxMatches");
+
+            String sourceName = getFileName(source);
+            String targetName = getFileName(target);
+
+
+            List<SparqlSelect> sparqlSelects = SparqlSelect.load(cqa);
+
+            List<Float> rangeList = parseRange(range);
+
+            DatasetManager.getInstance().load(sourceName, source);
+            DatasetManager.getInstance().load(targetName, target);
+
+
+            run(sourceName, targetName, sparqlSelects, rangeList, maxMatches, false, output);
+
+
+        } catch (ArgumentParserException e) {
+            parser.handleError(e);
         }
-
-        System.out.println("Found " + ds.size() + " datasets.");
-
-        Map<String, String> nd = new HashMap<>();
-        Map<String, List<SparqlSelect>> cqas = new HashMap<>();
-
-        try {
-            Files.walk(Paths.get(needs), 1).forEach(path -> {
-                String ont = path.getFileName().toString();
-                if (!ds.containsKey(ont)) return;
-                nd.put(ont, path.toString());
-
-
-                try {
-                    Files.walk(path, 1).forEach(path1 -> {
-                        if (Files.isDirectory(path1)) return;
-                        Scanner squery = null;
-                        try {
-                            squery = new Scanner(path1);
-                        } catch (IOException e) {
-                            throw new RuntimeException(e);
-                        }
-
-                        String query = squery.useDelimiter("\\Z").next();
-                        SparqlSelect sq = new SparqlSelect(query);
-                        cqas.computeIfAbsent(ont, s -> new ArrayList<>()).add(sq);
-                        squery.close();
-                    });
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
-
-
-            });
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-
-        for (String s : ds.keySet()) {
-            if (nd.containsKey(s)) continue;
-            System.out.println("⚠️ Not found CQAs for " + s + ".");
-        }
-
-        System.out.println("Needs loaded.");
-
-        System.out.println("Loading embeddings.");
-
-        Map<String, String[]> embs = new HashMap<>();
-        try {
-            Files.walk(Paths.get(embeddings), 1).forEach(path -> {
-                if (Files.isDirectory(path)) return;
-                String f = path.getFileName().toString();
-                String[] split = f.split("[_.]");
-
-                if (split[1].equals("n")) embs.computeIfAbsent(split[0], s -> new String[2])[0] = path.toString();
-                else if (split[1].equals("e")) embs.computeIfAbsent(split[0], s -> new String[2])[1] = path.toString();
-
-            });
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-
-
-        embs.forEach((name, paths) -> {
-            try {
-                EmbeddingManager.load(paths[0], paths[1]);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        });
-
-
-        ds.forEach((name, path) -> {
-            DatasetManager.getInstance().load(name, path);
-        });
-
-
-        List<String[]> datasetArgs = new ArrayList<>();
-
-
-        ds.forEach((s, s2) -> {
-            if (source != null && !source.startsWith(s)) return;
-            ds.forEach((s1, s21) -> {
-                if (s.equals(s1)) return;
-                if (target != null && !target.startsWith(s1)) return;
-                datasetArgs.add(new String[]{s, s1});
-            });
-        });
-
-
-        String[] split = range.split(":");
-
-        List<Float> ths = new ArrayList<>();
-
-        for (float th = Float.parseFloat(split[0]); th <= Float.parseFloat(split[1]); th += Float.parseFloat(split[2])) {
-            ths.add(th);
-        }
-
-        String output = "output";
-
-        for (String[] datasetArg : datasetArgs) {
-            run(datasetArg[0], datasetArg[1], cqas.get(datasetArg[0]), ths, 10, false, output);
-        }
-
 
     }
 
 
+    public static ArgumentParser buildArgumentParser() {
+        ArgumentParser parser = ArgumentParsers.newFor("Canard").build()
+                .description("Complex alignment generator.");
+
+        parser.addArgument("source")
+                .type(String.class)
+                .required(true)
+                .help("Source ontology.");
+
+        parser.addArgument("target")
+                .type(String.class)
+                .required(true)
+                .help("Target ontology.");
+
+        parser.addArgument("cqa")
+                .type(String.class)
+                .required(true)
+                .help("CQA folder.");
+
+        parser.addArgument("--range")
+                .type(String.class)
+                .setDefault("0.8")
+                .help("Threshold range.");
+
+        parser.addArgument("--output")
+                .type(String.class)
+                .setDefault("output")
+                .help("Output folder.");
+
+        parser.addArgument("--embedding")
+                .type(String.class)
+                .help("Path to embeddings.");
+
+        parser.addArgument("--silent")
+                .type(Boolean.class)
+                .action(Arguments.storeConst())
+                .setConst(true)
+                .setDefault(false)
+                .help("Disable console output.");
+
+        parser.addArgument("--maxMatches")
+                .type(Integer.class)
+                .setDefault(10)
+                .help("Max Matches.");
+
+
+        return parser;
+    }
+
+    public static String getFileName(String path) {
+        String[] split = Paths.get(path).getFileName().toString().split("\\.");
+        return split[0];
+    }
+
+
+    public static List<Float> parseRange(String range) {
+        List<Float> ranges = new ArrayList<>();
+        String[] split = range.split(":");
+
+        float start = Float.parseFloat(split[0]);
+        float end = start;
+        float step = 0.1f;
+
+        if (split.length > 1) end = Float.parseFloat(split[1]);
+        if (split.length > 2) start = Float.parseFloat(split[2]);
+
+        for (; start < end; start += step) {
+            ranges.add(start);
+        }
+
+        return ranges;
+    }
+
+
     public static void run(String sourceEndpoint, String targetEndpoint, List<SparqlSelect> queries, List<Float> th, int maxMatches, boolean reassess, String outputPath) throws SparqlEndpointUnreachableException, SparqlQueryMalFormedException, ExecutionException, InterruptedException, IncompleteSubstitutionException {
+
         OutputManager outputManager = new OutputManager();
         outputManager.initOutputEdoal(sourceEndpoint, targetEndpoint, th, outputPath);
 
@@ -293,10 +276,8 @@ public class ComplexAlignmentGeneration {
             }
         }
 
-//        System.out.println("Number of correspondences found (" + threshold + "): " + output.size());
 
         if (reassess) {
-            System.out.println("Reassessing similarity");
             for (SubgraphForOutput s : output) {
                 s.reassessSimilarityWithCounterExamples(sourceEndpoint, targetEndpoint, sq);
             }

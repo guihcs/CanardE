@@ -1,5 +1,6 @@
 package irit.similarity;
 
+import org.apache.commons.text.similarity.LevenshteinDistance;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -32,18 +33,7 @@ public class EmbeddingManager {
 
     public static double getSim(String s1, String s2){
 
-        INDArray n1 = embs1.get(s1);
-        INDArray n2 = embs1.get(s2);
-
-        if (n1 == null){
-            n1 = Nd4j.zeros(DataType.DOUBLE, embshape);
-        }
-
-        if (n2 == null){
-            n2 = Nd4j.zeros(DataType.DOUBLE, embshape);
-        }
-
-        return Transforms.cosineSim(n1, n2);
+        return LevenshteinDistance.getDefaultInstance().apply(s1, s2) / (float) Math.max(s1.length(), s2.length());
     }
 
     private static Map<String, INDArray> loadEmbs(String n1, String e1) throws IOException {
