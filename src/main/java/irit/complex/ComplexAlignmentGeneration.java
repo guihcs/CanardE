@@ -18,6 +18,7 @@ import net.sourceforge.argparse4j.impl.Arguments;
 import net.sourceforge.argparse4j.inf.ArgumentParser;
 import net.sourceforge.argparse4j.inf.ArgumentParserException;
 import net.sourceforge.argparse4j.inf.Namespace;
+import org.apache.jena.base.Sys;
 import org.apache.jena.rdf.model.RDFNode;
 
 import java.io.IOException;
@@ -60,6 +61,8 @@ public class ComplexAlignmentGeneration {
             run(sourceName, targetName, sparqlSelects, rangeList, maxMatches, false, output);
 
 
+            DatasetManager.getInstance().close();
+
         } catch (ArgumentParserException e) {
             parser.handleError(e);
         }
@@ -96,9 +99,6 @@ public class ComplexAlignmentGeneration {
                 .setDefault("output")
                 .help("Output folder.");
 
-        parser.addArgument("--embedding")
-                .type(String.class)
-                .help("Path to embeddings.");
 
         parser.addArgument("--silent")
                 .type(Boolean.class)
@@ -130,9 +130,12 @@ public class ComplexAlignmentGeneration {
         float end = start;
         float step = 0.1f;
 
-        if (split.length > 1) end = Float.parseFloat(split[1]);
-        if (split.length > 2) start = Float.parseFloat(split[2]);
 
+        if (split.length > 1) end = Float.parseFloat(split[1]);
+        if (split.length > 2) step = Float.parseFloat(split[2]);
+
+        ranges.add(start);
+        start += step;
         for (; start < end; start += step) {
             ranges.add(start);
         }
