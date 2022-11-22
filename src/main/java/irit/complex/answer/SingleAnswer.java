@@ -62,6 +62,7 @@ public class SingleAnswer extends Answer {
         HashSet<InstantiatedSubgraph> goodTriples = new HashSet<>();
 
         int count = 0;
+
         for (IRI iri : res.getSimilarIRIs()) {
             if (count < numberMaxOfExploredAnswers) {
 
@@ -150,7 +151,7 @@ public class SingleAnswer extends Answer {
                 iri.getValue() + " ?predicate ?object."
                 + "MINUS{ " + iri.getValue() + " <http://www.w3.org/2002/07/owl#sameAs> ?object.}"
 
-                + "}LIMIT 500";
+                + "} LIMIT 500";
 
         List<Map<String, RDFNode>> result = SparqlProxy.query(targetEndpoint, query);
 
