@@ -124,7 +124,6 @@ public class IRI extends Resource {
             }
         }
 
-        /*Check if a match is in the target dataset*/
         for (IRI match : allMatches) {
             if ( DatasetManager.getInstance().labelMaps.get(targetEndpoint).exists(match.toString())) {
                 similarIRIs.add(match);

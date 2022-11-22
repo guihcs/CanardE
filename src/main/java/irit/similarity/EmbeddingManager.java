@@ -13,12 +13,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class EmbeddingManager {
 
 
     private static Map<String, INDArray> embs1 = new HashMap<>();
     public static long[] embshape;
+    private static final Pattern pattern = Pattern.compile("([^>]+)[#/]([A-Za-z0-9_-]+)");
 
     public static void load(String n1, String e1) throws IOException {
 
@@ -31,9 +34,20 @@ public class EmbeddingManager {
     }
 
 
-    public static double getSim(String s1, String s2){
+    public static double getSim(String s1, String s2) {
+        s1 = getSuffix(s1).toLowerCase();
+        s2 = getSuffix(s2).toLowerCase();
+        return 1 - LevenshteinDistance.getDefaultInstance().apply(s1, s2) / (float) Math.max(s1.length(), s2.length());
+    }
 
-        return LevenshteinDistance.getDefaultInstance().apply(s1, s2) / (float) Math.max(s1.length(), s2.length());
+    private static String getSuffix(String value) {
+
+        Matcher matcher = pattern.matcher(value);
+        if (matcher.find()) {
+            return matcher.group(2);
+        } else {
+            return value;
+        }
     }
 
     private static Map<String, INDArray> loadEmbs(String n1, String e1) throws IOException {
@@ -54,17 +68,17 @@ public class EmbeddingManager {
         return embsMap;
     }
 
-    public static INDArray get(String e1){
+    public static INDArray get(String e1) {
         if (!embs1.containsKey(e1)) return Nd4j.zeros(DataType.DOUBLE, embshape);
         return embs1.get(e1);
     }
 
 
-    private static String processLabel(String line){
+    private static String processLabel(String line) {
         line = line.replaceAll("\\\\n", "\\n").trim();
-        if (line.startsWith("http://") && line.contains("#")){
+        if (line.startsWith("http://") && line.contains("#")) {
             String[] split = line.split("#");
-            if (split.length > 1){
+            if (split.length > 1) {
                 line = split[1];
             } else {
                 line = split[0];

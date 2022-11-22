@@ -23,6 +23,7 @@ import org.apache.jena.rdf.model.RDFNode;
 
 import java.io.IOException;
 import java.nio.file.Paths;
+import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -31,7 +32,6 @@ public class ComplexAlignmentGeneration {
 
 
     public static void main(String[] args) throws SparqlEndpointUnreachableException, SparqlQueryMalFormedException, ExecutionException, InterruptedException, IncompleteSubstitutionException, IOException {
-
 
         ArgumentParser parser = buildArgumentParser();
 
@@ -66,6 +66,7 @@ public class ComplexAlignmentGeneration {
         } catch (ArgumentParserException e) {
             parser.handleError(e);
         }
+
 
     }
 
@@ -162,7 +163,6 @@ public class ComplexAlignmentGeneration {
     public static void align(SparqlSelect sq, String sourceEndpoint, String targetEndpoint, int maxMatches, boolean reassess, List<Float> th, OutputManager outputManager) throws SparqlEndpointUnreachableException, SparqlQueryMalFormedException, ExecutionException, InterruptedException, IncompleteSubstitutionException {
         Set<Answer> matchedAnswers = getMatchedAnswers(sq, sourceEndpoint, targetEndpoint, maxMatches);
 
-
         for (float threshold : th) {
 
             List<SubgraphForOutput> subgraphForOutputs = buildSingleOutput(matchedAnswers, sq, sourceEndpoint, targetEndpoint, threshold, reassess);
@@ -252,7 +252,6 @@ public class ComplexAlignmentGeneration {
     private static List<SubgraphForOutput> buildSingleOutput(Set<Answer> matchedAnswers, SparqlSelect sq, String sourceEndpoint, String targetEndpoint, float threshold, boolean reassess) throws SparqlEndpointUnreachableException, SparqlQueryMalFormedException {
         HashSet<InstantiatedSubgraph> goodSubgraphs = new HashSet<>();
         for (Answer ans : matchedAnswers) {
-
             HashSet<InstantiatedSubgraph> localSubgraphs = ans.findCorrespondingSubGraph(sq, targetEndpoint, threshold);
             goodSubgraphs.addAll(localSubgraphs);
         }
@@ -279,12 +278,12 @@ public class ComplexAlignmentGeneration {
             }
         }
 
-
         if (reassess) {
             for (SubgraphForOutput s : output) {
                 s.reassessSimilarityWithCounterExamples(sourceEndpoint, targetEndpoint, sq);
             }
         }
+
 
         Collections.sort(output);
         ArrayList<SubgraphForOutput> singleOutput = new ArrayList<>();
@@ -296,6 +295,7 @@ public class ComplexAlignmentGeneration {
 
                 if (output.get(i).getSimilarity() == sim) {
                     singleOutput.add(output.get(i));
+
 
                 } else {
                     moreCorrespondences = false;
