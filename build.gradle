@@ -41,5 +41,9 @@ dependencies {
     implementation files('lib/align.jar')
     implementation files('lib/ontowrap.jar')
     implementation files('lib/procalign.jar')
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.8.1'
 }
 
+test {
+    useJUnitPlatform()
+}
