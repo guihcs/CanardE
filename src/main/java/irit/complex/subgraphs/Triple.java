@@ -9,16 +9,14 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
 import java.util.HashSet;
-import java.util.Set;
 
 public class Triple extends InstantiatedSubgraph {
     private final IRI subject;
     private final IRI predicate;
-    private Resource object;
-    private TripleType tripleType;
-    private boolean visited;
+    private final Resource object;
     public boolean keepObjectType;
     public boolean keepSubjectType;
+    private TripleType tripleType;
     private IRI subjectType;
     private IRI objectType;
     private double objectSimilarity;
@@ -41,7 +39,7 @@ public class Triple extends InstantiatedSubgraph {
             object = r;
         }
         tripleType = type;
-        visited = false;
+        boolean visited = false;
         keepObjectType = false;
         keepSubjectType = false;
         objectSimilarity = 0;
@@ -49,7 +47,7 @@ public class Triple extends InstantiatedSubgraph {
         predicateSimilarity = 0;
     }
 
-    public void retrieveIRILabels(String targetEndpoint) throws SparqlQueryMalFormedException, SparqlEndpointUnreachableException {
+    public void retrieveIRILabels(String targetEndpoint) {
         if (tripleType != TripleType.SUBJECT) {
             subject.retrieveLabels(targetEndpoint);
         }
@@ -74,7 +72,7 @@ public class Triple extends InstantiatedSubgraph {
     }
 
 
-    public double compareSim(INDArray label, double threshold){
+    public double compareSim(INDArray label, double threshold) {
         if (tripleType != TripleType.SUBJECT) {
             subjectSimilarity = Transforms.cosineSim(EmbeddingManager.get(subject.toString().replaceAll("[<>]", "")), label);
             subjectSimilarity = subjectSimilarity >= threshold ? subjectSimilarity : 0;
@@ -90,39 +88,28 @@ public class Triple extends InstantiatedSubgraph {
 
         return subjectSimilarity + predicateSimilarity + objectSimilarity;
     }
-    public double similarity(Set<String> labels1, HashSet<String> labels2, double threshold){
-        double score = 0;
-        for(String l1 : labels1){
-            for(String l2: labels2){
-                double sim = EmbeddingManager.getSim(l1, l2);
-                sim = sim < threshold ? 0 : sim;
-                score += sim;
-            }
-        }
-        return score;
-    }
 
     public double compareLabel(HashSet<String> targetLabels, double threshold, String targetEndpoint) {
         if (tripleType != TripleType.SUBJECT) {
             subjectType = subject.findMostSimilarType(targetEndpoint, targetLabels, threshold);
             double scoreTypeSubMax = 0;
             if (subjectType != null) {
-                scoreTypeSubMax = similarity(subjectType.getLabels(), targetLabels, threshold);
+                scoreTypeSubMax = IRI.similarity(subjectType.getLabels(), targetLabels, threshold);
             }
-            subjectSimilarity = similarity(subject.getLabels(), targetLabels, threshold);
+            subjectSimilarity = IRI.similarity(subject.getLabels(), targetLabels, threshold);
             if (scoreTypeSubMax > subjectSimilarity) {
                 keepSubjectType = true;
                 subjectSimilarity = scoreTypeSubMax;
             }
         }
         if (tripleType != TripleType.PREDICATE && !predicate.toString().equals("<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>")) {
-            predicateSimilarity = similarity(predicate.getLabels(), targetLabels, threshold);
+            predicateSimilarity = IRI.similarity(predicate.getLabels(), targetLabels, threshold);
         }
         if (tripleType != TripleType.OBJECT && object instanceof IRI) {
             objectType = ((IRI) object).findMostSimilarType(targetEndpoint, targetLabels, threshold);
             if (objectType != null) {
-                double scoreTypeObMax = similarity(objectType.getLabels(), targetLabels, threshold);
-                objectSimilarity = similarity(((IRI) object).getLabels(), targetLabels, threshold);
+                double scoreTypeObMax = IRI.similarity(objectType.getLabels(), targetLabels, threshold);
+                objectSimilarity = IRI.similarity(((IRI) object).getLabels(), targetLabels, threshold);
                 if (scoreTypeObMax > objectSimilarity) {
                     keepObjectType = true;
                     objectSimilarity = scoreTypeObMax;
@@ -132,7 +119,7 @@ public class Triple extends InstantiatedSubgraph {
         } else if (tripleType != TripleType.OBJECT) {
             HashSet<String> hashObj = new HashSet<>();
             hashObj.add(object.toString());
-            objectSimilarity = similarity(hashObj, targetLabels, threshold);
+            objectSimilarity = IRI.similarity(hashObj, targetLabels, threshold);
         }
 
 
@@ -150,6 +137,7 @@ public class Triple extends InstantiatedSubgraph {
     public Resource getObject() {
         return object;
     }
+
     public boolean isSubjectTriple() {
         return tripleType == TripleType.SUBJECT;
     }
@@ -182,7 +170,7 @@ public class Triple extends InstantiatedSubgraph {
         } else if (keepObjectType && !keepSubjectType) {
             result = subjStr + " " + predStr + " ?y. " +
                     "?y a " + objectType + ". ";
-        } else if (keepObjectType && keepSubjectType) {
+        } else if (keepObjectType) {
             result = "?x " + predStr + " ?y. " +
                     "?y a " + objectType + ". " +
                     "?x a " + subjectType + ". ";
@@ -211,7 +199,7 @@ public class Triple extends InstantiatedSubgraph {
         boolean res = false;
         if (getType() == t.getType()) {
             if (!isSubjectTriple()) {
-                res = res || getSubject().equals(t.getSubject());
+                res = getSubject().equals(t.getSubject());
             }
             if (!isPredicateTriple()) {
                 res = res || getPredicate().equals(t.getPredicate());

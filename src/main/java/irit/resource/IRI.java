@@ -3,10 +3,10 @@ package irit.resource;
 import irit.complex.subgraphs.Triple;
 import irit.dataset.DatasetManager;
 import irit.similarity.EmbeddingManager;
-import irit.sparql.query.exception.SparqlEndpointUnreachableException;
-import irit.sparql.query.exception.SparqlQueryMalFormedException;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 
@@ -14,9 +14,9 @@ public class IRI extends Resource {
     private final Set<String> labels;
     private final Set<Triple> triples;
     private final Set<IRI> types;
+    private final Pattern pattern = Pattern.compile("[+{}.?*^]");
     private boolean labelsGot;
     private boolean triplesRetrieved;
-    private final Pattern pattern = Pattern.compile("[+{}.?*^]");
 
     public IRI(String iri) {
         super(iri);
@@ -27,13 +27,25 @@ public class IRI extends Resource {
         triplesRetrieved = false;
     }
 
+    public static double similarity(Set<String> labels1, HashSet<String> labels2, double threshold) {
+        double score = 0;
+        for (String l1 : labels1) {
+            for (String l2 : labels2) {
+                double sim = EmbeddingManager.getSim(l1, l2);
+                sim = sim < threshold ? 0 : sim;
+                score += sim;
+            }
+        }
+        return score;
+    }
+
     public void retrieveLabels(String endpointUrl) {
         if (!labelsGot) {
             addLabel(value.replaceAll("[<>]", ""));
 
 
             String substring = value.substring(1);
-            substring = substring.substring(0, substring.length()-1);
+            substring = substring.substring(0, substring.length() - 1);
             Set<String> labels = DatasetManager.getInstance().labelMaps.get(endpointUrl).labels(substring);
 
 
@@ -49,7 +61,7 @@ public class IRI extends Resource {
 
     }
 
-    public void retrieveTypes(String endpointUrl) throws SparqlQueryMalFormedException, SparqlEndpointUnreachableException {
+    public void retrieveTypes(String endpointUrl) {
 
         Set<String> lmTypes = DatasetManager.getInstance().labelMaps.get(endpointUrl).types(value.replaceAll("[<>]", ""));
 
@@ -63,11 +75,7 @@ public class IRI extends Resource {
 
     public IRI findMostSimilarType(String endpointUrl, HashSet<String> targetLabels, double threshold) {
         if (getTypes().isEmpty()) {
-            try {
-                retrieveTypes(endpointUrl);
-            } catch (SparqlQueryMalFormedException | SparqlEndpointUnreachableException e) {
-                e.printStackTrace();
-            }
+            retrieveTypes(endpointUrl);
         }
         double scoreTypeMax = -1;
         IRI finalType = null;
@@ -81,18 +89,6 @@ public class IRI extends Resource {
             }
         }
         return finalType;
-    }
-
-    public double similarity(Set<String> labels1, HashSet<String> labels2, double threshold){
-        double score = 0;
-        for(String l1 : labels1){
-            for(String l2: labels2){
-                double sim = EmbeddingManager.getSim(l1, l2);
-                sim = sim < threshold ? 0 : sim;
-                score += sim;
-            }
-        }
-        return score;
     }
 
     public void addLabel(String label) {
@@ -125,7 +121,7 @@ public class IRI extends Resource {
         }
 
         for (IRI match : allMatches) {
-            if ( DatasetManager.getInstance().labelMaps.get(targetEndpoint).exists(match.toString())) {
+            if (DatasetManager.getInstance().labelMaps.get(targetEndpoint).exists(match.toString())) {
                 similarIRIs.add(match);
             }
         }

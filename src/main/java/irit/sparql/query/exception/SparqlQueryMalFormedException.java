@@ -6,20 +6,17 @@
 package irit.sparql.query.exception;
 
 /**
- *
  * @author murloc
  */
-public class SparqlQueryMalFormedException extends Exception
-{
+public class SparqlQueryMalFormedException extends Exception {
     final String message;
-    public SparqlQueryMalFormedException(String message)
-    {
+
+    public SparqlQueryMalFormedException(String message) {
         this.message = message;
     }
-    
-    public String toString()
-    {
-            return "The query is malformed : "+message;
+
+    public String toString() {
+        return "The query is malformed : " + message;
     }
-    
+
 }

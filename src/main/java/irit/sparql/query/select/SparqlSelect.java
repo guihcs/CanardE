@@ -6,15 +6,17 @@ import irit.sparql.query.SparqlQuery;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 
 public class SparqlSelect extends SparqlQuery {
-    private String select;
     private final ArrayList<String> selectFocus;
+    private String select;
 
     public SparqlSelect(String query) {
         super(query);
@@ -34,7 +36,6 @@ public class SparqlSelect extends SparqlQuery {
                 selectFocus.add(matcher.group(2).trim());
             }
             where = matcher.group(3).trim();
-            setAggregate();
         }
         Pattern pattern2 = Pattern.compile("""
                 select([ \t
@@ -75,9 +76,6 @@ public class SparqlSelect extends SparqlQuery {
 
     public void setSelect(String select) {
         this.select = select;
-    }
-
-    public void setAggregate() {
     }
 
     public String toString() {

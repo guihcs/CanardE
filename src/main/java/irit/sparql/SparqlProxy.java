@@ -1,6 +1,5 @@
 package irit.sparql;
 
-
 import irit.dataset.DatasetManager;
 import org.apache.jena.query.QueryExecution;
 import org.apache.jena.query.ResultSet;
@@ -26,7 +25,6 @@ public class SparqlProxy {
                 }
                 result.add(stringMap);
             });
-
         }
 
         return result;

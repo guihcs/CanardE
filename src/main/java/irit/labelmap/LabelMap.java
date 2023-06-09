@@ -1,9 +1,15 @@
 package irit.labelmap;
 
-import org.apache.jena.rdf.model.*;
+import org.apache.jena.rdf.model.Model;
+import org.apache.jena.rdf.model.RDFNode;
+import org.apache.jena.rdf.model.Statement;
+import org.apache.jena.rdf.model.StmtIterator;
 import org.apache.jena.riot.RDFDataMgr;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public class LabelMap {
@@ -41,30 +47,34 @@ public class LabelMap {
             String oi = o.toLowerCase();
 
 
-            if (!spm.containsKey(o)) spm.put(o, new HashMap<>());
-            if (!spm.get(o).containsKey(p)) spm.get(o).put(p, new HashSet<>());
-
-            spm.get(o).get(p).add(s);
-
-            if (!pom.containsKey(s)) pom.put(s, new HashMap<>());
-            if (!pom.get(s).containsKey(p)) pom.get(s).put(p, new HashSet<>());
-
-            pom.get(s).get(p).add(o);
+            method1(s, p, o);
 
 
-            if (!spmi.containsKey(oi)) spmi.put(oi, new HashMap<>());
-            if (!spmi.get(oi).containsKey(pi)) spmi.get(oi).put(pi, new HashSet<>());
-
-            spmi.get(oi).get(pi).add(si);
-
-            if (!som.containsKey(p)) spm.put(p, new HashMap<>());
-            if (!spm.get(p).containsKey(s)) spm.get(p).put(s, new HashSet<>());
-
-            spm.get(p).get(s).add(o);
+            method2(s, p, o, si, pi, oi);
 
         }
 
 
+    }
+
+    private void method2(String s, String p, String o, String si, String pi, String oi) {
+        method3(s, p, o, si, pi, oi, spmi, som, spm);
+    }
+
+    private void method3(String s, String p, String o, String si, String pi, String oi, Map<String, Map<String, Set<String>>> spmi, Map<String, Map<String, Set<String>>> som, Map<String, Map<String, Set<String>>> spm) {
+        if (!spmi.containsKey(oi)) spmi.put(oi, new HashMap<>());
+        if (!spmi.get(oi).containsKey(pi)) spmi.get(oi).put(pi, new HashSet<>());
+
+        spmi.get(oi).get(pi).add(si);
+
+        if (!som.containsKey(p)) spm.put(p, new HashMap<>());
+        if (!spm.get(p).containsKey(s)) spm.get(p).put(s, new HashSet<>());
+
+        spm.get(p).get(s).add(o);
+    }
+
+    private void method1(String s, String p, String o) {
+        method3(p, s, o, s, p, o, spm, pom, pom);
     }
 
     public Set<String> getSimilar(String v) {
@@ -99,16 +109,17 @@ public class LabelMap {
 
         Set<String> result = new HashSet<>();
 
+        method4(v, result, pom);
+        method4(v, result, spm);
+
+        return result;
+    }
+
+    private void method4(String v, Set<String> result, Map<String, Map<String, Set<String>>> pom) {
         result.addAll(pom.getOrDefault(v, Map.of()).getOrDefault("http://www.w3.org/2000/01/rdf-schema#seeAlso", Set.of()));
         result.addAll(pom.getOrDefault(v, Map.of()).getOrDefault("http://www.w3.org/2002/07/owl#sameAs", Set.of()));
         result.addAll(pom.getOrDefault(v, Map.of()).getOrDefault("http://www.w3.org/2004/02/skos/core#closeMatch", Set.of()));
         result.addAll(pom.getOrDefault(v, Map.of()).getOrDefault("http://www.w3.org/2004/02/skos/core#exactMacth", Set.of()));
-        result.addAll(spm.getOrDefault(v, Map.of()).getOrDefault("http://www.w3.org/2000/01/rdf-schema#seeAlso", Set.of()));
-        result.addAll(spm.getOrDefault(v, Map.of()).getOrDefault("http://www.w3.org/2002/07/owl#sameAs", Set.of()));
-        result.addAll(spm.getOrDefault(v, Map.of()).getOrDefault("http://www.w3.org/2004/02/skos/core#closeMatch", Set.of()));
-        result.addAll(spm.getOrDefault(v, Map.of()).getOrDefault("http://www.w3.org/2004/02/skos/core#exactMacth", Set.of()));
-
-        return result;
     }
 
 
@@ -148,7 +159,7 @@ public class LabelMap {
     }
 
 
-    public String getType(RDFNode r){
+    public String getType(RDFNode r) {
         if (r.isLiteral()) return "Literal";
         if (r.isAnon()) return "Anon";
         if (r.isResource()) return "Resource";

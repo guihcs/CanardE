@@ -2,7 +2,8 @@ package irit.resource;
 
 import irit.dataset.DatasetManager;
 
-import java.util.*;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -21,21 +22,6 @@ public class Resource {
     public boolean isIRI() {
         Matcher matcher = pattern.matcher(value);
         return !value.contains(" ") && matcher.find();
-    }
-
-
-    public static String join(String del, Iterable<String> data) {
-
-        Iterator<String> iterator = data.iterator();
-        if (!iterator.hasNext()) return "";
-
-        StringBuilder pref = new StringBuilder(iterator.next());
-
-        while (iterator.hasNext()) {
-            pref.append(del).append(iterator.next());
-        }
-
-        return pref.toString();
     }
 
     public void findSimilarResource(String targetEndpoint) {

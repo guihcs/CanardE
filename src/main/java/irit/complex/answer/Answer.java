@@ -8,29 +8,32 @@ import irit.sparql.query.select.SparqlSelect;
 import java.util.HashSet;
 
 public abstract class Answer {
-	final HashSet<String> goodTriples ;
-	
-	public Answer(){
-		goodTriples = new HashSet<>();
-		
-	}
-	
-	public void getSimilarIRIs(String targetEndpoint) {}
-	
-	public void getExistingMatches(String sourceEndpoint, String targetEndpoint) {}
-	
-	public void retrieveIRILabels(String endpointURL) {}
-	
-	public HashSet<InstantiatedSubgraph> findCorrespondingSubGraph(SparqlSelect query, String targetEndpoint, double similarityThreshold) throws SparqlEndpointUnreachableException, SparqlQueryMalFormedException {
-		return new HashSet<>();
-	}
+    final HashSet<String> goodTriples;
 
-	public boolean hasMatch(){ 
-		return false;
-	}
-	
-	public String printMatchedEquivalents() {
-		return "";
-	}
+    public Answer() {
+        goodTriples = new HashSet<>();
+
+    }
+
+    public void getSimilarIRIs(String targetEndpoint) {
+    }
+
+    public void getExistingMatches(String sourceEndpoint, String targetEndpoint) {
+    }
+
+    public void retrieveIRILabels(String endpointURL) {
+    }
+
+    public HashSet<InstantiatedSubgraph> findCorrespondingSubGraph(SparqlSelect query, String targetEndpoint, double similarityThreshold) throws SparqlEndpointUnreachableException, SparqlQueryMalFormedException {
+        return new HashSet<>();
+    }
+
+    public boolean hasMatch() {
+        return false;
+    }
+
+    public String printMatchedEquivalents() {
+        return "";
+    }
 
 }

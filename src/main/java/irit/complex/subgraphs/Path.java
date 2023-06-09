@@ -2,44 +2,83 @@ package irit.complex.subgraphs;
 
 import irit.resource.IRI;
 import irit.resource.Resource;
-import irit.similarity.EmbeddingManager;
 import irit.sparql.SparqlProxy;
 import org.apache.jena.rdf.model.RDFNode;
 
 import java.util.*;
 
 public class Path extends InstantiatedSubgraph {
-    ArrayList<IRI> properties;
     final ArrayList<Resource> entities;
     final ArrayList<IRI> types;
+    final List<Boolean> inverse;
+    ArrayList<IRI> properties;
     double similarity;
     double typeSimilarity;
-    final ArrayList<Boolean> inverse;
 
-    public Path(Resource x, Resource y, String sparqlEndpoint, int length, ArrayList<Boolean> inverse) {
+    public Path(Resource x, Resource y, String sparqlEndpoint, int length, List<Boolean> inverse) {
         properties = new ArrayList<>();
         entities = new ArrayList<>();
         types = new ArrayList<>();
         similarity = 0;
         this.inverse = inverse;
 
-
         findPathWithLength(x, y, sparqlEndpoint, length);
     }
 
     private void findPathWithLength(Resource x, Resource y, String sparqlEndpoint, int length) {
 
+        String query = buildQuery(x, y, length);
 
-        String query;
+        List<Map<String, RDFNode>> result = SparqlProxy.query(sparqlEndpoint, query);
+
+        if (result.isEmpty()) {
+            return;
+        }
+
+        Map<String, RDFNode> next = result.get(0);
+
+        entities.add(next.containsKey("x") ? new Resource(next.get("x").toString()) : x);
+
+        boolean stop = false;
+
+        for (int i = 1; i <= length && !stop; i++) {
+            String p = next.get("p" + i).toString();
+            Resource res = new Resource(p);
+            switch (p) {
+                case "http://www.w3.org/1999/02/22-rdf-syntax-ns#type",
+                        "http://www.w3.org/2002/07/owl#sameAs",
+                        "http://www.w3.org/2004/02/skos/core#exactMatch",
+                        "http://www.w3.org/2004/02/skos/core#closeMatch",
+                        "http://dbpedia.org/ontology/wikiPageWikiLink" -> stop = true;
+            }
+
+            if (res.isIRI()) {
+                properties.add(new IRI("<" + p + ">"));
+            }
+        }
+
+        if (stop) {
+            properties = new ArrayList<>();
+        } else if (length >= 2) {
+            for (int j = 1; j < length; j++) {
+                String v = next.get("v" + j).toString();
+                Resource res = new Resource(v);
+                entities.add(res.isIRI() ? new IRI("<" + v + ">") : res);
+            }
+        }
+
+        entities.add(next.containsKey("y") ? new Resource(next.get("y").toString()) : y);
+    }
+
+    private String buildQuery(Resource x, Resource y, int length) {
         StringBuilder queryBody = new StringBuilder();
-        ArrayList<String> variables = new ArrayList<>();
+        List<String> variables = new ArrayList<>();
 
         if (!x.isIRI()) {
             variables.add("?x");
         } else {
             variables.add(x.toString());
         }
-
 
         for (int i = 1; i <= length - 1; i++) {
             variables.add("?v" + i);
@@ -68,67 +107,14 @@ public class Path extends InstantiatedSubgraph {
             queryBody.append("   filter (regex(?y, \"^").append(y).append("$\",\"i\"))\n");
         }
 
-        query = "SELECT DISTINCT * WHERE { " + queryBody + " }  LIMIT 1";
-
-
-        List<Map<String, RDFNode>> result = SparqlProxy.query(sparqlEndpoint, query);
-        Iterator<Map<String, RDFNode>> retIteratorTarg = result.iterator();
-
-        if (retIteratorTarg.hasNext()) {
-            Map<String, RDFNode> next = retIteratorTarg.next();
-            if (next.containsKey("x")) {
-                entities.add(new Resource(next.get("x").toString()));
-            } else {
-                entities.add(x);
-            }
-            int i = 1;
-            boolean stop = false;
-            while (i <= length && !stop) {
-                String p = next.get("p" + i).toString();
-                Resource res = new Resource(p);
-                switch (p) {
-                    case "http://www.w3.org/1999/02/22-rdf-syntax-ns#type",
-                            "http://www.w3.org/2002/07/owl#sameAs",
-                            "http://www.w3.org/2004/02/skos/core#exactMatch",
-                            "http://www.w3.org/2004/02/skos/core#closeMatch",
-                            "http://dbpedia.org/ontology/wikiPageWikiLink" -> stop = true;
-                }
-
-                if (res.isIRI()) {
-                    properties.add(new IRI("<" + p + ">"));
-                }
-                i++;
-            }
-            if (stop) {
-                properties = new ArrayList<>();
-            }
-            if (length >= 2 && !stop) {
-                for (int j = 1; j <= length - 1; j++) {
-                    String v = next.get("v" + j).toString();
-                    Resource res = new Resource(v);
-                    if (res.isIRI()) {
-                        entities.add(new IRI("<" + v + ">"));
-                    } else {
-                        entities.add(res);
-                    }
-                }
-            }
-            if (next.containsKey("y")) {
-                entities.add(new Resource(next.get("y").toString()));
-            } else {
-                entities.add(y);
-            }
-
-        }
-
-
+        return "SELECT DISTINCT * WHERE { " + queryBody + " }  LIMIT 1";
     }
 
-    public void compareLabel(HashSet<String> targetLabels, double threshold, String targetEndpoint, double typeThreshold) {
+    public void compareLabel(Set<String> targetLabels, double threshold, String targetEndpoint, double typeThreshold) {
         similarity = 0;
         for (IRI prop : properties) {
             prop.retrieveLabels(targetEndpoint);
-            similarity += similarity(prop.getLabels(), targetLabels, threshold);
+            similarity += IRI.similarity(prop.getLabels(), (HashSet<String>) targetLabels, threshold);
         }
 
         for (int i = 0; i < entities.size(); i++) {
@@ -136,7 +122,7 @@ public class Path extends InstantiatedSubgraph {
             if (ent instanceof IRI) {
                 IRI type = types.get(i);
                 if (type != null) {
-                    double scoreType = similarity(type.getLabels(), targetLabels, threshold);
+                    double scoreType = IRI.similarity(type.getLabels(), (HashSet<String>) targetLabels, threshold);
                     if (scoreType > typeThreshold) {
                         typeSimilarity += scoreType;
                     } else {
@@ -146,23 +132,12 @@ public class Path extends InstantiatedSubgraph {
             }
         }
         if (pathFound()) {
-            similarity += 0.5;//if path
+            similarity += 0.5;
         }
 
         getSimilarity();
     }
 
-    public double similarity(Set<String> labels1, HashSet<String> labels2, double threshold){
-        double score = 0;
-        for(String l1 : labels1){
-            for(String l2: labels2){
-                double sim = EmbeddingManager.getSim(l1, l2);
-                sim = sim < threshold ? 0 : sim;
-                score += sim;
-            }
-        }
-        return score;
-    }
 
     public boolean pathFound() {
         return !properties.isEmpty();
@@ -209,10 +184,10 @@ public class Path extends InstantiatedSubgraph {
         return similarity + typeSimilarity;
     }
 
-    public void getMostSimilarTypes(String endpointUrl, HashSet<String> targetLabels, double threshold) {
+    public void getMostSimilarTypes(String endpointUrl, Set<String> targetLabels, double threshold) {
         for (Resource r : entities) {
-            if (r instanceof IRI) {
-                IRI type = ((IRI) r).findMostSimilarType(endpointUrl, targetLabels, threshold);
+            if (r instanceof IRI iri) {
+                IRI type = iri.findMostSimilarType(endpointUrl, (HashSet<String>) targetLabels, threshold);
                 types.add(type);
             } else {
                 types.add(null);
@@ -228,7 +203,7 @@ public class Path extends InstantiatedSubgraph {
         return types;
     }
 
-    public ArrayList<Boolean> getInverse() {
+    public List<Boolean> getInverse() {
         return inverse;
     }
 }

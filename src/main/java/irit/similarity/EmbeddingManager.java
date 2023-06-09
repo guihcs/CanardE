@@ -4,7 +4,6 @@ import org.apache.commons.text.similarity.LevenshteinDistance;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.ops.transforms.Transforms;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -12,27 +11,15 @@ import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class EmbeddingManager {
 
 
-    private static Map<String, INDArray> embs1 = new HashMap<>();
-    public static long[] embshape;
+    private static final Map<String, INDArray> embs1 = new HashMap<>();
     private static final Pattern pattern = Pattern.compile("([^>]+)[#/]([A-Za-z0-9_-]+)");
-
-    public static void load(String n1, String e1) throws IOException {
-
-        Map<String, INDArray> embs = loadEmbs(n1, e1);
-
-        Optional<INDArray> first = embs.values().stream().findFirst();
-        embshape = first.get().shape();
-
-        embs1.putAll(embs);
-    }
-
+    public static long[] embshape;
 
     public static double getSim(String s1, String s2) {
         s1 = getSuffix(s1).toLowerCase();

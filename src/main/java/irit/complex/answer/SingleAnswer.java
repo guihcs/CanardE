@@ -5,15 +5,11 @@ import irit.complex.subgraphs.Triple;
 import irit.complex.subgraphs.TripleType;
 import irit.resource.IRI;
 import irit.resource.Resource;
-import irit.similarity.EmbeddingManager;
 import irit.sparql.SparqlProxy;
 import irit.sparql.query.exception.SparqlEndpointUnreachableException;
 import irit.sparql.query.exception.SparqlQueryMalFormedException;
 import irit.sparql.query.select.SparqlSelect;
 import org.apache.jena.rdf.model.RDFNode;
-import org.nd4j.linalg.api.buffer.DataType;
-import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.HashSet;
 import java.util.List;

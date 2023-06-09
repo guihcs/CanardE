@@ -8,8 +8,8 @@ import irit.dataset.DatasetManager;
 import irit.output.OutputManager;
 import irit.resource.IRI;
 import irit.resource.Resource;
-import irit.sparql.exceptions.IncompleteSubstitutionException;
 import irit.sparql.SparqlProxy;
+import irit.sparql.exceptions.IncompleteSubstitutionException;
 import irit.sparql.query.exception.SparqlEndpointUnreachableException;
 import irit.sparql.query.exception.SparqlQueryMalFormedException;
 import irit.sparql.query.select.SparqlSelect;
@@ -18,14 +18,12 @@ import net.sourceforge.argparse4j.impl.Arguments;
 import net.sourceforge.argparse4j.inf.ArgumentParser;
 import net.sourceforge.argparse4j.inf.ArgumentParserException;
 import net.sourceforge.argparse4j.inf.Namespace;
-import org.apache.jena.base.Sys;
 import org.apache.jena.rdf.model.RDFNode;
 
 import java.io.IOException;
 import java.nio.file.Paths;
-import java.time.Instant;
 import java.util.*;
-import java.util.concurrent.*;
+import java.util.concurrent.ExecutionException;
 
 
 public class ComplexAlignmentGeneration {
@@ -35,7 +33,6 @@ public class ComplexAlignmentGeneration {
 
         ArgumentParser parser = buildArgumentParser();
 
-
         try {
             Namespace res = parser.parseArgs(args);
             String source = res.get("source");
@@ -43,12 +40,10 @@ public class ComplexAlignmentGeneration {
             String cqa = res.get("cqa");
             String range = res.get("range");
             String output = res.get("output");
-            boolean silent = res.get("silent");
             int maxMatches = res.get("maxMatches");
 
             String sourceName = getFileName(source);
             String targetName = getFileName(target);
-
 
             List<SparqlSelect> sparqlSelects = SparqlSelect.load(cqa);
 
@@ -62,6 +57,7 @@ public class ComplexAlignmentGeneration {
 
 
             DatasetManager.getInstance().close();
+
 
         } catch (ArgumentParserException e) {
             parser.handleError(e);
@@ -99,7 +95,6 @@ public class ComplexAlignmentGeneration {
                 .type(String.class)
                 .setDefault("output")
                 .help("Output folder.");
-
 
         parser.addArgument("--silent")
                 .type(Boolean.class)
@@ -160,24 +155,22 @@ public class ComplexAlignmentGeneration {
     }
 
 
-    public static void align(SparqlSelect sq, String sourceEndpoint, String targetEndpoint, int maxMatches, boolean reassess, List<Float> th, OutputManager outputManager) throws SparqlEndpointUnreachableException, SparqlQueryMalFormedException, ExecutionException, InterruptedException, IncompleteSubstitutionException {
+    public static void align(SparqlSelect sq, String sourceEndpoint, String targetEndpoint, int maxMatches, boolean reassess, List<Float> th, OutputManager outputManager) throws SparqlEndpointUnreachableException, SparqlQueryMalFormedException, IncompleteSubstitutionException {
         Set<Answer> matchedAnswers = getMatchedAnswers(sq, sourceEndpoint, targetEndpoint, maxMatches);
 
         for (float threshold : th) {
 
             List<SubgraphForOutput> subgraphForOutputs = buildSingleOutput(matchedAnswers, sq, sourceEndpoint, targetEndpoint, threshold, reassess);
-
             if (!subgraphForOutputs.isEmpty()) {
                 outputManager.addToOutput(threshold, sq, subgraphForOutputs);
             }
 
         }
 
-
     }
 
 
-    public static Set<Answer> getMatchedAnswers(SparqlSelect sq, String sourceEndpoint, String targetEndpoint, int maxMatches) throws SparqlEndpointUnreachableException, SparqlQueryMalFormedException, IncompleteSubstitutionException {
+    public static Set<Answer> getMatchedAnswers(SparqlSelect sq, String sourceEndpoint, String targetEndpoint, int maxMatches) {
         HashMap<String, IRI> iriList = sq.getIRIList();
         for (Map.Entry<String, IRI> m : iriList.entrySet()) {
             m.getValue().retrieveLabels(sourceEndpoint);
@@ -224,10 +217,7 @@ public class ComplexAlignmentGeneration {
                 }
                 offsetMatch++;
             }
-
-
         }
-
 
         if (matchedAnswers.isEmpty()) {
 
@@ -241,7 +231,6 @@ public class ComplexAlignmentGeneration {
                 }
             }
 
-
         }
 
 
@@ -250,11 +239,18 @@ public class ComplexAlignmentGeneration {
 
 
     private static List<SubgraphForOutput> buildSingleOutput(Set<Answer> matchedAnswers, SparqlSelect sq, String sourceEndpoint, String targetEndpoint, float threshold, boolean reassess) throws SparqlEndpointUnreachableException, SparqlQueryMalFormedException {
-        HashSet<InstantiatedSubgraph> goodSubgraphs = new HashSet<>();
-        for (Answer ans : matchedAnswers) {
-            HashSet<InstantiatedSubgraph> localSubgraphs = ans.findCorrespondingSubGraph(sq, targetEndpoint, threshold);
-            goodSubgraphs.addAll(localSubgraphs);
+        List<InstantiatedSubgraph> goodSubgraphs = new ArrayList<>();
+
+        List<Answer> answers = new ArrayList<>(matchedAnswers);
+        answers.sort(Comparator.comparing(Answer::toString));
+
+        for (Answer ans : answers) {
+            Set<InstantiatedSubgraph> localSubgraphs = ans.findCorrespondingSubGraph(sq, targetEndpoint, threshold);
+            List<InstantiatedSubgraph> instantiatedSubgraphs = new ArrayList<>(localSubgraphs);
+            instantiatedSubgraphs.sort(Comparator.comparing(InstantiatedSubgraph::toString));
+            goodSubgraphs.addAll(instantiatedSubgraphs);
         }
+
         ArrayList<SubgraphForOutput> output = new ArrayList<>();
         for (InstantiatedSubgraph t : goodSubgraphs) {
             boolean added = false;

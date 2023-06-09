@@ -4,10 +4,10 @@ import java.io.Serial;
 
 public class NotAFolderException extends Exception {
 
-	@Serial
+    @Serial
     private static final long serialVersionUID = 2763344757163908098L;
-	
-	public NotAFolderException(String m){
-		super(m);
-	}
+
+    public NotAFolderException(String m) {
+        super(m);
+    }
 }

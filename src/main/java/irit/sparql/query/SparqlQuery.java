@@ -11,13 +11,12 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 
-
 public abstract class SparqlQuery {
+    protected final String from;
+    protected final HashMap<String, IRI> iriList;
     private final Set<Entry<String, String>> prefix;
-    protected String from;
     protected String where;
     protected String mainQuery;
-    protected final HashMap<String, IRI> iriList;
 
     public SparqlQuery(Set<Entry<String, String>> prefix, String from, String where) {
         this.prefix = new HashSet<>();

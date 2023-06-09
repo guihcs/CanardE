@@ -3,7 +3,6 @@ package irit.output;
 import irit.complex.subgraphs.SubgraphForOutput;
 import irit.sparql.query.select.SparqlSelect;
 
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -11,11 +10,10 @@ import java.util.Map;
 
 public class OutputManager {
 
-    private Map<Float, ArrayList<Output>> outputs;
     public List<Float> th;
+    private Map<Float, ArrayList<Output>> outputs;
 
-
-    public void initOutputEdoal(String sourceEndpoint, String targetEndpoint, List<Float> ths, String outputEdoal){
+    public void initOutputEdoal(String sourceEndpoint, String targetEndpoint, List<Float> ths, String outputEdoal) {
         th = ths;
         outputs = new HashMap<>();
 
@@ -25,23 +23,23 @@ public class OutputManager {
             outputs.get(th).add(new EDOALOutput(sourceEndpoint, targetEndpoint, filePath));
 
 
-            for (Output o: outputs.get(th)){
+            for (Output o : outputs.get(th)) {
                 o.init();
             }
         }
     }
 
-    public void addToOutput(float th, SparqlSelect sq, List<SubgraphForOutput> subGraph){
-        for(Output o: outputs.get(th)){
+    public void addToOutput(float th, SparqlSelect sq, List<SubgraphForOutput> subGraph) {
+        for (Output o : outputs.get(th)) {
             o.addToOutput(subGraph, sq);
         }
 
     }
 
 
-    public void endOutput(){
+    public void endOutput() {
         for (Float th : outputs.keySet()) {
-            for(Output o: outputs.get(th)){
+            for (Output o : outputs.get(th)) {
                 o.end();
             }
         }
