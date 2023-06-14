@@ -17,10 +17,7 @@ import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 public class BinaryDeterminismTest {
     private static final String sourceName = "edas_100";
@@ -118,10 +115,40 @@ public class BinaryDeterminismTest {
         Path p1 = new Path(iri, y1, targetName, 3, List.of(true, false, true));
         Path p2 = new Path(iri, y1, targetName, 3, List.of(false, false, true));
 
-
         DatasetManager.getInstance().close();
 
         Assertions.assertTrue(p1.pathFound());
         Assertions.assertFalse(p2.pathFound());
+    }
+
+    @Test
+    public void test2() throws IOException {
+
+        String cqa = "src/test/resources";
+
+        DatasetManager.getInstance().load(sourceName, source);
+        DatasetManager.getInstance().load(targetName, target);
+        List<SparqlSelect> sparqlSelects = SparqlSelect.load(cqa);
+        SparqlSelect select = sparqlSelects.get(0);
+
+        Set<Answer> matchedAnswers = ComplexAlignmentGeneration.getMatchedAnswers(select, sourceName, targetName, 10);
+
+        List<Answer> answers = new ArrayList<>(matchedAnswers);
+        answers.sort(Comparator.comparing(Answer::toString));
+
+        PairAnswer answer = (PairAnswer) answers.get(0);
+
+        IRI iri = answer.getR1().getSimilarIRIs().stream().toList().get(0);
+        IRI y1 = answer.getR2().getSimilarIRIs().stream().toList().get(0);
+
+        String value1 = iri.getValue();
+        value1 = value1.substring(1, value1.length() - 1);
+
+        String value2 = y1.getValue();
+        value2 = value2.substring(1, value2.length() - 1);
+
+        Path p1 = new Path(iri, y1, targetName, 3, List.of(true, false, true));
+        var result = DatasetManager.getInstance().labelMaps.get(targetName).pathBetween(value1, value2, 5);
+        System.out.println(result);
     }
 }

@@ -16,7 +16,7 @@ import java.util.List;
 import java.util.Map;
 
 public class SingleAnswer extends Answer {
-    final Resource res;
+    public final Resource res;
     final int numberMaxOfExploredAnswers;
 
 
@@ -31,8 +31,8 @@ public class SingleAnswer extends Answer {
     }
 
     public void retrieveIRILabels(String endpointURL) {
-        if (res instanceof IRI) {
-            ((IRI) res).retrieveLabels(endpointURL);
+        if (res instanceof IRI iri) {
+            iri.retrieveLabels(endpointURL);
         }
     }
 

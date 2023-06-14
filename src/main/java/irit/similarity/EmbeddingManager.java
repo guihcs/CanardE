@@ -8,11 +8,10 @@ import org.nd4j.linalg.factory.Nd4j;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 public class EmbeddingManager {
 
@@ -20,21 +19,26 @@ public class EmbeddingManager {
     private static final Map<String, INDArray> embs1 = new HashMap<>();
     private static final Pattern pattern = Pattern.compile("([^>]+)[#/]([A-Za-z0-9_-]+)");
     public static long[] embshape;
+    private static LevenshteinDistance levenshteinDistance = LevenshteinDistance.getDefaultInstance();
 
-    public static double getSim(String s1, String s2) {
-        s1 = getSuffix(s1).toLowerCase();
-        s2 = getSuffix(s2).toLowerCase();
-        return 1 - LevenshteinDistance.getDefaultInstance().apply(s1, s2) / (float) Math.max(s1.length(), s2.length());
+    public static double similarity(Set<String> labels1, HashSet<String> labels2, double threshold) {
+        double score = 0;
+        Set<String> lab1 = labels1.stream().map(EmbeddingManager::getSuffix).map(String::toLowerCase).collect(Collectors.toSet());
+        Set<String> lab2 = labels2.stream().map(EmbeddingManager::getSuffix).map(String::toLowerCase).collect(Collectors.toSet());
+
+        for (String l1 : lab1) {
+            for (String l2 : lab2) {
+                double sim = 1 - levenshteinDistance.apply(l1, l2) / (float) Math.max(l1.length(), l2.length());
+                sim = sim < threshold ? 0 : sim;
+                score += sim;
+            }
+        }
+        return score;
     }
 
     private static String getSuffix(String value) {
-
         Matcher matcher = pattern.matcher(value);
-        if (matcher.find()) {
-            return matcher.group(2);
-        } else {
-            return value;
-        }
+        return matcher.find() ? matcher.group(2) : value;
     }
 
     private static Map<String, INDArray> loadEmbs(String n1, String e1) throws IOException {

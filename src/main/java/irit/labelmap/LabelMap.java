@@ -5,11 +5,9 @@ import org.apache.jena.rdf.model.RDFNode;
 import org.apache.jena.rdf.model.Statement;
 import org.apache.jena.rdf.model.StmtIterator;
 import org.apache.jena.riot.RDFDataMgr;
+import org.apache.jena.tdb.store.Hash;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class LabelMap {
@@ -78,7 +76,7 @@ public class LabelMap {
     }
 
     public Set<String> getSimilar(String v) {
-
+        v = v.toLowerCase();
         Set<String> result = new HashSet<>();
 
         if (spmi.containsKey(v)) {
@@ -176,6 +174,54 @@ public class LabelMap {
         Set<String> orDefault = pom.getOrDefault(value, Map.of()).getOrDefault("http://www.w3.org/1999/02/22-rdf-syntax-ns#type", Set.of());
 
         return orDefault.stream().filter(s -> typeMap.get(s).equals("URIResource") || typeMap.get(s).equals("Resource")).collect(Collectors.toSet());
+    }
+
+
+
+
+
+
+    public List<Map<String, String>> pathBetween(String v1, String v2, int maxDepth) {
+        if (v1.equals(v2)) return List.of();
+        Set<String> visited = new HashSet<>();
+        Queue<Tree<String>> queue = new LinkedList<>();
+        queue.add(new Tree<>(v1, null, 0));
+        while (!queue.isEmpty()) {
+            Tree<String> node = queue.poll();
+            if (visited.contains(node.getValue())) continue;
+            visited.add(node.getValue());
+            if (node.getValue().equals(v2)) {
+                List<String> result = new ArrayList<>();
+                while (node != null) {
+                    result.add(node.getValue());
+                    node = node.getParent();
+                }
+
+                Map<String, String> map = new HashMap<>();
+                map.put("v1", result.remove(result.size() - 1));
+                map.put("v2", result.remove(0));
+
+                for (int i = 0, j = 1; i < result.size(); i++) {
+                    if (i % 2 == 1) continue;
+                    map.put("p" + j, result.get(i));
+                    j++;
+                }
+
+                return List.of(map);
+            }
+            for (Map.Entry<String, Set<String>> stringSetEntry : pom.getOrDefault(node.getValue(), Map.of()).entrySet()) {
+                if (node.getDepth() >= maxDepth) continue;
+                Tree<String> stringTree = new Tree<>(stringSetEntry.getKey(), node, node.getDepth() + 1);
+                for (String s : stringSetEntry.getValue()) {
+                    Tree<String> child = new Tree<>(s, stringTree, stringTree.getDepth() + 1);
+                    stringTree.addChild(child);
+                    queue.add(child);
+                }
+            }
+
+        }
+
+        return List.of();
     }
 
 

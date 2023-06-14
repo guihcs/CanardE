@@ -119,20 +119,12 @@ public class PairAnswer extends Answer {
     }
 
     public void queryPaths(String targetEndpoint, HashSet<InstantiatedSubgraph> paths, Set<String> queryLabels, Resource x, Resource y) {
-        boolean found = false;
 
-        for (int length = 1; length < 4 && !found; length++) {
+        Path p = new Path(x, y, targetEndpoint, 5);
+        if (!p.pathFound()) return;
 
-            for (List<Boolean> invArray : allInversePossibilities(length)) {
-                Path p = new Path(x, y, targetEndpoint, length, invArray);
-                if (!p.pathFound()) continue;
-
-                p.getMostSimilarTypes(targetEndpoint, queryLabels, 0.0);
-                paths.add(p);
-                found = true;
-            }
-        }
-
+        p.getMostSimilarTypes(targetEndpoint, queryLabels, 0.0);
+        paths.add(p);
     }
 
     public HashSet<InstantiatedSubgraph> findCorrespondingSubGraph(SparqlSelect query, String targetEndpoint, double similarityThreshold) {

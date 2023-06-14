@@ -8,10 +8,11 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class IRI extends Resource {
-    private final Set<String> labels;
+    public final Set<String> labels;
     private final Set<Triple> triples;
     private final Set<IRI> types;
     private final Pattern pattern = Pattern.compile("[+{}.?*^]");
@@ -27,29 +28,15 @@ public class IRI extends Resource {
         triplesRetrieved = false;
     }
 
-    public static double similarity(Set<String> labels1, HashSet<String> labels2, double threshold) {
-        double score = 0;
-        for (String l1 : labels1) {
-            for (String l2 : labels2) {
-                double sim = EmbeddingManager.getSim(l1, l2);
-                sim = sim < threshold ? 0 : sim;
-                score += sim;
-            }
-        }
-        return score;
-    }
 
     public void retrieveLabels(String endpointUrl) {
         if (!labelsGot) {
-            addLabel(value.replaceAll("[<>]", ""));
+            addLabel(getSuffix());
 
-
-            String substring = value.substring(1);
-            substring = substring.substring(0, substring.length() - 1);
-            Set<String> labels = DatasetManager.getInstance().labelMaps.get(endpointUrl).labels(substring);
-
-
-            for (String s : labels) {
+            String substring = value.substring(1, value.length() - 1);
+            Set<String> labels1 = DatasetManager.getInstance().labelMaps.get(endpointUrl).labels(substring);
+            for (String item : labels1) {
+                String s = item.replaceAll("\"", "").replaceAll("\\^\\^.+", "").toLowerCase();
                 Resource res = new Resource(s);
                 if (!res.isIRI()) {
                     addLabel(s);
@@ -59,6 +46,17 @@ public class IRI extends Resource {
             labelsGot = true;
         }
 
+    }
+
+    public String getSuffix() {
+        Pattern pattern = Pattern.compile("<([^>]+)[#/]([A-Za-z0-9_-]+)>");
+        Matcher matcher = pattern.matcher(value);
+        if (matcher.find()) {
+            //System.out.println(value +" "+matcher.group(2));
+            return matcher.group(2);
+        } else {
+            return value;
+        }
     }
 
     public void retrieveTypes(String endpointUrl) {
@@ -82,7 +80,7 @@ public class IRI extends Resource {
         for (IRI type : getTypes()) {
             double scoreType;
             type.retrieveLabels(endpointUrl);
-            scoreType = similarity(type.getLabels(), targetLabels, threshold);
+            scoreType = EmbeddingManager.similarity(type.getLabels(), targetLabels, threshold);
             if (scoreTypeMax < scoreType) {
                 scoreTypeMax = scoreType;
                 finalType = type;
@@ -132,20 +130,21 @@ public class IRI extends Resource {
         if (labels.isEmpty()) {
             retrieveLabels(targetEndpoint);
         }
-        Set<String> nml = new HashSet<>();
-
         for (String rawLab : labels) {
 
-            String label = pattern.matcher(rawLab).replaceAll("");
-            Set<String> similar = DatasetManager.getInstance().labelMaps.get(targetEndpoint).getSimilar(label.toLowerCase());
-            nml.addAll(similar);
+            String label = rawLab.replaceAll("[+{}.?^]", "");
 
+            if (label.length() < 1705) {
+
+                Set<String> similar1 = DatasetManager.getInstance().labelMaps.get(targetEndpoint).getSimilar(label);
+                for (String stringRDFNodeMap : similar1) {
+                    String s = stringRDFNodeMap.replaceAll("\"", "");
+                    similarIRIs.add(new IRI("<" + s + ">"));
+                }
+
+
+            }
         }
-
-        for (String s : nml) {
-            similarIRIs.add(new IRI("<" + s + ">"));
-        }
-
     }
 
 

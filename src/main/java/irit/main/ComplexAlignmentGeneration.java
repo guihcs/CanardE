@@ -159,7 +159,6 @@ public class ComplexAlignmentGeneration {
         Set<Answer> matchedAnswers = getMatchedAnswers(sq, sourceEndpoint, targetEndpoint, maxMatches);
 
         for (float threshold : th) {
-
             List<SubgraphForOutput> subgraphForOutputs = buildSingleOutput(matchedAnswers, sq, sourceEndpoint, targetEndpoint, threshold, reassess);
             if (!subgraphForOutputs.isEmpty()) {
                 outputManager.addToOutput(threshold, sq, subgraphForOutputs);
@@ -209,7 +208,6 @@ public class ComplexAlignmentGeneration {
             }
 
             while (matchedAnswers.size() < maxMatches && offsetMatch < answers.size()) {
-
                 Answer ans = answers.get(offsetMatch);
                 ans.getExistingMatches(sourceEndpoint, targetEndpoint);
                 if (ans.hasMatch()) {
@@ -218,9 +216,8 @@ public class ComplexAlignmentGeneration {
                 offsetMatch++;
             }
         }
-
+        answers.sort(Comparator.comparing(Answer::toString));
         if (matchedAnswers.isEmpty()) {
-
             Iterator<Answer> ansIt = answers.iterator();
             while (matchedAnswers.size() < maxMatches && ansIt.hasNext()) {
                 Answer ans = ansIt.next();
@@ -233,13 +230,13 @@ public class ComplexAlignmentGeneration {
 
         }
 
-
         return matchedAnswers;
     }
 
 
     private static List<SubgraphForOutput> buildSingleOutput(Set<Answer> matchedAnswers, SparqlSelect sq, String sourceEndpoint, String targetEndpoint, float threshold, boolean reassess) throws SparqlEndpointUnreachableException, SparqlQueryMalFormedException {
         List<InstantiatedSubgraph> goodSubgraphs = new ArrayList<>();
+
 
         List<Answer> answers = new ArrayList<>(matchedAnswers);
         answers.sort(Comparator.comparing(Answer::toString));
@@ -282,17 +279,16 @@ public class ComplexAlignmentGeneration {
 
 
         Collections.sort(output);
+        output.sort(Comparator.comparing(SubgraphForOutput::toString));
         ArrayList<SubgraphForOutput> singleOutput = new ArrayList<>();
+
         if (output.size() > 0 && output.get(output.size() - 1).getSimilarity() < 0.6 && output.get(output.size() - 1).getSimilarity() > 0.01) {
             double sim = output.get(output.size() - 1).getSimilarity();
             boolean moreCorrespondences = true;
             int i = output.size() - 1;
             while (i >= 0 && moreCorrespondences) {
-
                 if (output.get(i).getSimilarity() == sim) {
                     singleOutput.add(output.get(i));
-
-
                 } else {
                     moreCorrespondences = false;
                 }

@@ -1,9 +1,12 @@
 package irit.complex.subgraphs;
 
+import irit.dataset.DatasetManager;
 import irit.resource.IRI;
 import irit.resource.Resource;
+import irit.similarity.EmbeddingManager;
 import irit.sparql.SparqlProxy;
 import org.apache.jena.rdf.model.RDFNode;
+import org.apache.jena.reasoner.rulesys.LPBackwardRuleInfGraph;
 
 import java.util.*;
 
@@ -25,12 +28,69 @@ public class Path extends InstantiatedSubgraph {
         findPathWithLength(x, y, sparqlEndpoint, length);
     }
 
+
+    public Path(Resource x, Resource y, String sparqlEndpoint, int maxLength) {
+        properties = new ArrayList<>();
+        entities = new ArrayList<>();
+        types = new ArrayList<>();
+        similarity = 0;
+        inverse = new ArrayList<>();
+        findPathMaxLength(x, y, sparqlEndpoint, maxLength);
+    }
+
+    private void findPathMaxLength(Resource x, Resource y, String sparqlEndpoint, int length) {
+
+
+        String value1 = x.getValue();
+        value1 = value1.substring(1, value1.length() - 1);
+
+        String value2 = y.getValue();
+        value2 = value2.substring(1, value2.length() - 1);
+
+        var result = DatasetManager.getInstance().labelMaps.get(sparqlEndpoint).pathBetween(value1, value2, length);
+        if (result.isEmpty()) {
+            return;
+        }
+
+        Map<String, String> next = result.get(0);
+        entities.add(next.containsKey("x") ? new Resource(next.get("x")) : x);
+
+        boolean stop = false;
+
+        for (int i = 1; i < next.size() - 1 && !stop; i++) {
+            String p = next.get("p" + i);
+            Resource res = new Resource(p);
+            switch (p) {
+                case "http://www.w3.org/1999/02/22-rdf-syntax-ns#type",
+                        "http://www.w3.org/2002/07/owl#sameAs",
+                        "http://www.w3.org/2004/02/skos/core#exactMatch",
+                        "http://www.w3.org/2004/02/skos/core#closeMatch",
+                        "http://dbpedia.org/ontology/wikiPageWikiLink" -> stop = true;
+            }
+
+            if (res.isIRI()) {
+                properties.add(new IRI("<" + p + ">"));
+            }
+        }
+
+        if (stop) {
+            properties = new ArrayList<>();
+        } else if (length >= 2) {
+            for (int j = 1; j < 3; j++) {
+                String v = next.get("v" + j);
+                Resource res = new Resource(v);
+                entities.add(res.isIRI() ? new IRI("<" + v + ">") : res);
+            }
+        }
+
+        entities.add(next.containsKey("y") ? new Resource(next.get("y")) : y);
+    }
+
+
     private void findPathWithLength(Resource x, Resource y, String sparqlEndpoint, int length) {
 
         String query = buildQuery(x, y, length);
-
         List<Map<String, RDFNode>> result = SparqlProxy.query(sparqlEndpoint, query);
-
         if (result.isEmpty()) {
             return;
         }
@@ -114,7 +174,7 @@ public class Path extends InstantiatedSubgraph {
         similarity = 0;
         for (IRI prop : properties) {
             prop.retrieveLabels(targetEndpoint);
-            similarity += IRI.similarity(prop.getLabels(), (HashSet<String>) targetLabels, threshold);
+            similarity += EmbeddingManager.similarity(prop.getLabels(), (HashSet<String>) targetLabels, threshold);
         }
 
         for (int i = 0; i < entities.size(); i++) {
@@ -122,7 +182,7 @@ public class Path extends InstantiatedSubgraph {
             if (ent instanceof IRI) {
                 IRI type = types.get(i);
                 if (type != null) {
-                    double scoreType = IRI.similarity(type.getLabels(), (HashSet<String>) targetLabels, threshold);
+                    double scoreType = EmbeddingManager.similarity(type.getLabels(), (HashSet<String>) targetLabels, threshold);
                     if (scoreType > typeThreshold) {
                         typeSimilarity += scoreType;
                     } else {
@@ -168,7 +228,7 @@ public class Path extends InstantiatedSubgraph {
             if (types.get(i) != null) {
                 ret.append(xStr).append(" a ").append(types.get(i)).append(".  ");
             }
-            if (inverse.get(i)) {
+            if (inverse.contains(i) && inverse.get(i)) {
                 ret.append(yStr).append(" ").append(properties.get(i)).append(" ").append(xStr).append(".  ");
             } else {
                 ret.append(xStr).append(" ").append(properties.get(i)).append(" ").append(yStr).append(".  ");

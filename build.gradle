@@ -39,6 +39,8 @@ dependencies {
     implementation 'net.sourceforge.argparse4j:argparse4j:0.9.0'
 // https://mvnrepository.com/artifact/org.nd4j/nd4j-api
     implementation 'org.nd4j:nd4j-api:1.0.0-M2.1'
+// https://mvnrepository.com/artifact/org.slf4j/slf4j-reload4j
+    testImplementation 'org.slf4j:slf4j-reload4j:2.0.7'
 
 }
 

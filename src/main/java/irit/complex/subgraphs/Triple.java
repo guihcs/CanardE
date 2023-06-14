@@ -94,22 +94,22 @@ public class Triple extends InstantiatedSubgraph {
             subjectType = subject.findMostSimilarType(targetEndpoint, targetLabels, threshold);
             double scoreTypeSubMax = 0;
             if (subjectType != null) {
-                scoreTypeSubMax = IRI.similarity(subjectType.getLabels(), targetLabels, threshold);
+                scoreTypeSubMax = EmbeddingManager.similarity(subjectType.getLabels(), targetLabels, threshold);
             }
-            subjectSimilarity = IRI.similarity(subject.getLabels(), targetLabels, threshold);
+            subjectSimilarity = EmbeddingManager.similarity(subject.getLabels(), targetLabels, threshold);
             if (scoreTypeSubMax > subjectSimilarity) {
                 keepSubjectType = true;
                 subjectSimilarity = scoreTypeSubMax;
             }
         }
         if (tripleType != TripleType.PREDICATE && !predicate.toString().equals("<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>")) {
-            predicateSimilarity = IRI.similarity(predicate.getLabels(), targetLabels, threshold);
+            predicateSimilarity = EmbeddingManager.similarity(predicate.getLabels(), targetLabels, threshold);
         }
         if (tripleType != TripleType.OBJECT && object instanceof IRI) {
             objectType = ((IRI) object).findMostSimilarType(targetEndpoint, targetLabels, threshold);
             if (objectType != null) {
-                double scoreTypeObMax = IRI.similarity(objectType.getLabels(), targetLabels, threshold);
-                objectSimilarity = IRI.similarity(((IRI) object).getLabels(), targetLabels, threshold);
+                double scoreTypeObMax = EmbeddingManager.similarity(objectType.getLabels(), targetLabels, threshold);
+                objectSimilarity = EmbeddingManager.similarity(((IRI) object).getLabels(), targetLabels, threshold);
                 if (scoreTypeObMax > objectSimilarity) {
                     keepObjectType = true;
                     objectSimilarity = scoreTypeObMax;
@@ -119,7 +119,7 @@ public class Triple extends InstantiatedSubgraph {
         } else if (tripleType != TripleType.OBJECT) {
             HashSet<String> hashObj = new HashSet<>();
             hashObj.add(object.toString());
-            objectSimilarity = IRI.similarity(hashObj, targetLabels, threshold);
+            objectSimilarity = EmbeddingManager.similarity(hashObj, targetLabels, threshold);
         }
 
 
