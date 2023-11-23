@@ -6,7 +6,6 @@ import irit.resource.Resource;
 import irit.similarity.EmbeddingManager;
 import irit.sparql.SparqlProxy;
 import org.apache.jena.rdf.model.RDFNode;
-import org.apache.jena.reasoner.rulesys.LPBackwardRuleInfGraph;
 
 import java.util.*;
 

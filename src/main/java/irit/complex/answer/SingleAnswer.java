@@ -48,7 +48,7 @@ public class SingleAnswer extends Answer {
         }
     }
 
-    public HashSet<InstantiatedSubgraph> findCorrespondingSubGraph(SparqlSelect query, String targetEndpoint, double similarityThreshold) throws SparqlEndpointUnreachableException, SparqlQueryMalFormedException {
+    public HashSet<InstantiatedSubgraph> findCorrespondingSubGraph(SparqlSelect query, String targetEndpoint, double similarityThreshold) {
 
         HashSet<String> queryLabels = query.getLabels();
 

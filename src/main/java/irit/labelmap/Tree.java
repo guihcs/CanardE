@@ -7,8 +7,8 @@ public class Tree<V> {
 
     V value;
     List<Tree<V>> children;
-    Tree<V> parent;
-    int depth;
+    final Tree<V> parent;
+    final int depth;
 
     public Tree(V value, Tree<V> parent, int depth) {
         this.value = value;
@@ -19,18 +19,6 @@ public class Tree<V> {
 
     public V getValue() {
         return value;
-    }
-
-    public List<Tree<V>> getChildren() {
-        return children;
-    }
-
-    public void setValue(V value) {
-        this.value = value;
-    }
-
-    public void setChildren(List<Tree<V>> children) {
-        this.children = children;
     }
 
     public void addChild(Tree<V> child) {

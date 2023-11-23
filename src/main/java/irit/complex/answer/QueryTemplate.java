@@ -7,8 +7,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class QueryTemplate {
-    private String query;
-    private Set<String> toSubstitute;
+    private final String query;
+    private final Set<String> toSubstitute;
 
     public QueryTemplate(String query) {
         this.query = query;
@@ -18,11 +18,6 @@ public class QueryTemplate {
         while (m.find()) {
             toSubstitute.add(m.group(1));
         }
-    }
-
-
-    public Set<String> getSubstitute() {
-        return toSubstitute;
     }
 
 

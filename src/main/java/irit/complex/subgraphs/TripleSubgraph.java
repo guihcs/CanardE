@@ -108,7 +108,7 @@ public class TripleSubgraph extends SubgraphForOutput {
 
         res = res.replaceAll("\\?someObject", concatObj.toString());
 
-        res = res.replaceAll("\\[", "\\{").replaceAll("]", "\\}");
+        res = res.replaceAll("\\[", "{").replaceAll("]", "}");
         extension = res;
 
     }
@@ -172,10 +172,6 @@ public class TripleSubgraph extends SubgraphForOutput {
             }
         }
         return res.toString();
-    }
-
-    public ArrayList<Triple> getTriples() {
-        return triples;
     }
 
     public boolean predicateHasMaxSim() {

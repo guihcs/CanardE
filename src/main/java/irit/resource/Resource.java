@@ -1,8 +1,6 @@
 package irit.resource;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import irit.complex.answer.QueryTemplate;
-import irit.dataset.DatasetManager;
 import irit.sparql.SparqlProxy;
 import irit.sparql.exceptions.IncompleteSubstitutionException;
 import org.apache.jena.rdf.model.RDFNode;
@@ -28,19 +26,20 @@ public class Resource {
         return !value.contains(" ") && matcher.find();
     }
 
-    QueryTemplate similar = new QueryTemplate("PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>\n" +
-            "PREFIX skos-xl: <http://www.w3.org/2008/05/skos-xl#>\n" +
-            "PREFIX owl: <http://www.w3.org/2002/07/owl#>\n" +
-            "\n" +
-            "\n" +
-            "SELECT DISTINCT ?x WHERE {\n" +
-            "{?x ?z ?label.}\n" +
-            "UNION {?x skos-xl:prefLabel ?z.\n" +
-            "?z skos-xl:literalForm ?label.}\n" +
-            "filter (regex(?label, \"^{{labelValue}}$\",\"i\")).\n" +
-            "}");
+    final QueryTemplate similar = new QueryTemplate("""
+            PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+            PREFIX skos-xl: <http://www.w3.org/2008/05/skos-xl#>
+            PREFIX owl: <http://www.w3.org/2002/07/owl#>
 
-    public String getSimilarQuery(String endpoint,Map<String, String> substitution){
+
+            SELECT DISTINCT ?x WHERE {
+            {?x ?z ?label.}
+            UNION {?x skos-xl:prefLabel ?z.
+            ?z skos-xl:literalForm ?label.}
+            filter (regex(?label, "^{{labelValue}}$","i")).
+            }""");
+
+    public String getSimilarQuery(Map<String, String> substitution){
         String query = "";
         try {
             query = similar.substitute(substitution);
@@ -53,7 +52,6 @@ public class Resource {
     }
 
     public void findSimilarResource(String targetEndpoint) {
-        /**Label search (heavy on large KBs)*/
         Map<String, String> substitution = new HashMap<>();
         substitution.put("labelValue", value);
         if (value.length()>1){
@@ -62,7 +60,7 @@ public class Resource {
         else{
             substitution.put("LabelValue", "\""+value.toUpperCase()+"\"");
         }
-        String query = getSimilarQuery(targetEndpoint,substitution);
+        String query = getSimilarQuery(substitution);
         //System.out.println(query);
 
         List<Map<String, RDFNode>> ret = SparqlProxy.query(targetEndpoint, query);
@@ -75,7 +73,7 @@ public class Resource {
         }
 
         substitution.put("labelValue", "\""+value.substring(0, 1).toUpperCase() + value.substring(1)+"\"@en");
-        query = getSimilarQuery(targetEndpoint,substitution);
+        query = getSimilarQuery(substitution);
         //System.out.println(query);
 
         ret = SparqlProxy.query(targetEndpoint, query);
@@ -88,7 +86,7 @@ public class Resource {
         }
 
         substitution.put("labelValue", "\""+value.substring(0, 1).toUpperCase() + value.substring(1)+"\"");
-        query = getSimilarQuery(targetEndpoint,substitution);
+        query = getSimilarQuery(substitution);
         //System.out.println(query);
 
         ret = SparqlProxy.query(targetEndpoint, query);

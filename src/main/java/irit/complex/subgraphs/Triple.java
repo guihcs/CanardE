@@ -3,8 +3,6 @@ package irit.complex.subgraphs;
 import irit.resource.IRI;
 import irit.resource.Resource;
 import irit.similarity.EmbeddingManager;
-import irit.sparql.query.exception.SparqlEndpointUnreachableException;
-import irit.sparql.query.exception.SparqlQueryMalFormedException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
@@ -39,7 +37,6 @@ public class Triple extends InstantiatedSubgraph {
             object = r;
         }
         tripleType = type;
-        boolean visited = false;
         keepObjectType = false;
         keepSubjectType = false;
         objectSimilarity = 0;
@@ -59,7 +56,7 @@ public class Triple extends InstantiatedSubgraph {
         }
     }
 
-    public void retrieveTypes(String targetEndpoint) throws SparqlQueryMalFormedException, SparqlEndpointUnreachableException {
+    public void retrieveTypes(String targetEndpoint) {
         if (tripleType != TripleType.SUBJECT) {
             subject.retrieveTypes(targetEndpoint);
         }
@@ -163,6 +160,10 @@ public class Triple extends InstantiatedSubgraph {
             objStr = "?answer";
         }
 
+        return getResult(subjStr, predStr, objStr);
+    }
+
+    private String getResult(String subjStr, String predStr, String objStr) {
         String result = subjStr + " " + predStr + " " + objStr + ". ";
         if (keepSubjectType && !keepObjectType) {
             result = "?x " + predStr + " " + objStr + ". " +
@@ -231,7 +232,7 @@ public class Triple extends InstantiatedSubgraph {
     }
 
     public boolean isNullTriple() {
-        return subject.toString().equals("") && predicate.toString().equals("") && object.toString().equals("");
+        return subject.toString().isEmpty() && predicate.toString().isEmpty() && object.toString().isEmpty();
     }
 
 

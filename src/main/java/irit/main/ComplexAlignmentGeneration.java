@@ -19,17 +19,16 @@ import net.sourceforge.argparse4j.inf.ArgumentParser;
 import net.sourceforge.argparse4j.inf.ArgumentParserException;
 import net.sourceforge.argparse4j.inf.Namespace;
 import org.apache.jena.rdf.model.RDFNode;
-
 import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.*;
-import java.util.concurrent.ExecutionException;
+import irit.similarity.EmbeddingManager;
 
 
 public class ComplexAlignmentGeneration {
 
 
-    public static void main(String[] args) throws SparqlEndpointUnreachableException, SparqlQueryMalFormedException, ExecutionException, InterruptedException, IncompleteSubstitutionException, IOException {
+    public static void main(String[] args) throws SparqlEndpointUnreachableException, SparqlQueryMalFormedException, IncompleteSubstitutionException, IOException {
 
         ArgumentParser parser = buildArgumentParser();
 
@@ -41,6 +40,12 @@ public class ComplexAlignmentGeneration {
             String range = res.get("range");
             String output = res.get("output");
             int maxMatches = res.get("maxMatches");
+            List<String> embeddings = res.get("embeddings");
+
+            if (embeddings != null) {
+                EmbeddingManager.loadEmbeddings(embeddings);
+            }
+
 
             String sourceName = getFileName(source);
             String targetName = getFileName(target);
@@ -108,6 +113,10 @@ public class ComplexAlignmentGeneration {
                 .setDefault(10)
                 .help("Max Matches.");
 
+        parser.addArgument("--embeddings")
+                .type(String.class)
+                .nargs("+")
+                .help("Paths to embeddings files.");
 
         return parser;
     }
@@ -140,7 +149,7 @@ public class ComplexAlignmentGeneration {
     }
 
 
-    public static void run(String sourceEndpoint, String targetEndpoint, List<SparqlSelect> queries, List<Float> th, int maxMatches, boolean reassess, String outputPath) throws SparqlEndpointUnreachableException, SparqlQueryMalFormedException, ExecutionException, InterruptedException, IncompleteSubstitutionException {
+    public static void run(String sourceEndpoint, String targetEndpoint, List<SparqlSelect> queries, List<Float> th, int maxMatches, boolean reassess, String outputPath) throws SparqlEndpointUnreachableException, SparqlQueryMalFormedException {
 
         OutputManager outputManager = new OutputManager();
         outputManager.initOutputEdoal(sourceEndpoint, targetEndpoint, th, outputPath);
@@ -155,7 +164,7 @@ public class ComplexAlignmentGeneration {
     }
 
 
-    public static void align(SparqlSelect sq, String sourceEndpoint, String targetEndpoint, int maxMatches, boolean reassess, List<Float> th, OutputManager outputManager) throws SparqlEndpointUnreachableException, SparqlQueryMalFormedException, IncompleteSubstitutionException {
+    public static void align(SparqlSelect sq, String sourceEndpoint, String targetEndpoint, int maxMatches, boolean reassess, List<Float> th, OutputManager outputManager) throws SparqlEndpointUnreachableException, SparqlQueryMalFormedException {
         Set<Answer> matchedAnswers = getMatchedAnswers(sq, sourceEndpoint, targetEndpoint, maxMatches);
 
         for (float threshold : th) {
@@ -282,7 +291,7 @@ public class ComplexAlignmentGeneration {
         output.sort(Comparator.comparing(SubgraphForOutput::toString));
         ArrayList<SubgraphForOutput> singleOutput = new ArrayList<>();
 
-        if (output.size() > 0 && output.get(output.size() - 1).getSimilarity() < 0.6 && output.get(output.size() - 1).getSimilarity() > 0.01) {
+        if (!output.isEmpty() && output.get(output.size() - 1).getSimilarity() < 0.6 && output.get(output.size() - 1).getSimilarity() > 0.01) {
             double sim = output.get(output.size() - 1).getSimilarity();
             boolean moreCorrespondences = true;
             int i = output.size() - 1;
@@ -314,7 +323,7 @@ public class ComplexAlignmentGeneration {
             boolean type1 = response.get(sq.getSelectFocus().get(0).replaceFirst("\\?", "")).isAnon();
             boolean type2 = response.get(sq.getSelectFocus().get(1).replaceFirst("\\?", "")).isAnon();
             if (!type1 && !type2) {
-                if (!s1.equals("") && !s2.equals("")) {
+                if (!s1.isEmpty() && !s2.isEmpty()) {
                     PairAnswer pair = new PairAnswer(new Resource(s1), new Resource(s2));
                     answers.add(pair);
                 }

@@ -15,7 +15,6 @@ public class IRI extends Resource {
     public final Set<String> labels;
     private final Set<Triple> triples;
     private final Set<IRI> types;
-    private final Pattern pattern = Pattern.compile("[+{}.?*^]");
     private boolean labelsGot;
     private boolean triplesRetrieved;
 

@@ -5,7 +5,7 @@ import java.util.Map;
 
 public class QueryOutput extends Output {
 
-    public QueryOutput(String source, String target, String outputQueryFolder, Map<String, String> cqaNames) {
+    public QueryOutput(String source, String target) {
         super(source, target);
     }
 

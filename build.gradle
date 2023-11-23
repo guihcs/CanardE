@@ -13,7 +13,6 @@ plugins {
 group = 'irit'
 version = '0.1.1'
 description = 'CanardE'
-java.sourceCompatibility = JavaVersion.VERSION_18
 
 repositories {
     mavenLocal()
@@ -42,8 +41,14 @@ dependencies {
 // https://mvnrepository.com/artifact/org.slf4j/slf4j-reload4j
     testImplementation 'org.slf4j:slf4j-reload4j:2.0.7'
 
+// https://mvnrepository.com/artifact/org.nd4j/nd4j-native-platform
+    implementation 'org.nd4j:nd4j-native-platform:1.0.0-M2.1'
+
+
+
 }
 
 test {
     useJUnitPlatform()
 }
+

@@ -154,28 +154,6 @@ public class PairAnswer extends Answer {
         return r1.toString() + " " + r2.toString();
     }
 
-    public List<List<Boolean>> allInversePossibilities(int length) {
-        List<List<Boolean>> result = new ArrayList<>();
-        for (int i = 0; i < Math.pow(2, length); i++) {
-            ArrayList<Boolean> invArray = new ArrayList<>();
-            StringBuilder invStr = new StringBuilder(Integer.toBinaryString(i));
-            while (invStr.length() < length) {
-                invStr.insert(0, "0");
-            }
-            for (char invCh : invStr.toString().toCharArray()) {
-                if (invCh == '0') {
-                    invArray.add(false);
-                } else if (invCh == '1') {
-                    invArray.add(true);
-                }
-            }
-            result.add(invArray);
-        }
-
-        return result;
-
-    }
-
     public String printMatchedEquivalents() {
         return r1.getSimilarIRIs().toString() + " <--> " + r2.getSimilarIRIs().toString();
     }
@@ -188,11 +166,4 @@ public class PairAnswer extends Answer {
         return r2;
     }
 
-    public boolean isSimilarLooked() {
-        return similarLooked;
-    }
-
-    public void setSimilarLooked(boolean similarLooked) {
-        this.similarLooked = similarLooked;
-    }
 }

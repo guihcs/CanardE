@@ -54,7 +54,7 @@ public abstract class SparqlQuery {
             String[] pref = aQuery.split("prefix");
             for (int j = 0; j < pref.length; j++) {
                 String str;
-                if (!pref[0].equals(""))
+                if (!pref[0].isEmpty())
                     str = pref[0];
                 else
                     str = pref[pref.length - 1];
@@ -63,7 +63,7 @@ public abstract class SparqlQuery {
 
             for (String s : pref) {
                 String currPrefix = s.trim();
-                if (!currPrefix.equals("") && currPrefix.indexOf('<') != -1 && currPrefix.indexOf('>') != -1) {
+                if (!currPrefix.isEmpty() && currPrefix.indexOf('<') != -1 && currPrefix.indexOf('>') != -1) {
                     int begin = currPrefix.indexOf('<');
                     int end = currPrefix.indexOf('>');
                     String ns = currPrefix.substring(0, currPrefix.indexOf(':')).trim();

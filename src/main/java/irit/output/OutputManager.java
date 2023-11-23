@@ -10,11 +10,9 @@ import java.util.Map;
 
 public class OutputManager {
 
-    public List<Float> th;
     private Map<Float, ArrayList<Output>> outputs;
 
     public void initOutputEdoal(String sourceEndpoint, String targetEndpoint, List<Float> ths, String outputEdoal) {
-        th = ths;
         outputs = new HashMap<>();
 
         for (float th : ths) {

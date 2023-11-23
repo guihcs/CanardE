@@ -174,7 +174,7 @@ public class EDOALOutput extends Output {
             ArrayList<ClassExpression> classExprMSet = new ArrayList<>();
             classExprM = getClassExpression(minusSubgraphs, classExprMSet);
 
-            if (classExprMSet.size() > 0) {
+            if (!classExprMSet.isEmpty()) {
                 ArrayList<ClassExpression> classExprMNotfinal = new ArrayList<>();
                 classExprMNotfinal.add(classExprM);
                 ClassExpression minusExpr = new ClassConstruction(Constructor.NOT, classExprMNotfinal);
@@ -196,7 +196,7 @@ public class EDOALOutput extends Output {
             ArrayList<RelationExpression> relExprMSet = new ArrayList<>();
             relM = getRelationExpression(minusSubgraphs, relExprMSet);
 
-            if (relExprMSet.size() > 0) {
+            if (!relExprMSet.isEmpty()) {
                 ArrayList<RelationExpression> relExprMNotfinal = new ArrayList<>();
                 relExprMNotfinal.add(relM);
                 RelationExpression minusExpr = new RelationConstruction(Constructor.NOT, relExprMNotfinal);
@@ -243,9 +243,9 @@ public class EDOALOutput extends Output {
 
     public ArrayList<String> setOfUNIONSubgraphs(String s) {
         s = s.replaceAll("[\n\t ]+", " ");
-        s = s.replaceAll("[\n\t ]+\\.", "\\.");
-        s = s.replaceAll("\\\\*\\{", "\\\\\\{");
-        s = s.replaceAll("\\\\*}", "\\\\\\}");
+        s = s.replaceAll("[\n\t ]+\\.", ".");
+        s = s.replaceAll("\\\\*\\{", "\\\\{");
+        s = s.replaceAll("\\\\*}", "\\\\}");
         s = s.replaceAll("minus", "MINUS");
         s = s.replaceAll("MINUS *\\\\\\{([^\\\\}]+)\\\\}", "");
         s = s.replaceAll("union", "UNION");
@@ -254,23 +254,23 @@ public class EDOALOutput extends Output {
         Matcher matcher1 = pattern1.matcher(s);
         if (matcher1.find()) {
             res.add(matcher1.group(1).trim());
-            s = s.replaceFirst("\\\\\\{" + matcher1.group(1).replaceAll("\\?", "\\\\\\?") + "\\\\}", "");
+            s = s.replaceFirst("\\\\\\{" + matcher1.group(1).replaceAll("\\?", "\\\\?") + "\\\\}", "");
             Pattern pattern2 = Pattern.compile("UNION *\\\\\\{([^\\\\}]+)\\\\}");
             Matcher matcher2 = pattern2.matcher(s);
             while (matcher2.find()) {
                 res.add(matcher2.group(1));
                 //System.out.println(matcher2.group());
                 String mgroup = matcher2.group();
-                mgroup = mgroup.replaceAll("\\\\*\\{", "\\\\\\{");
-                mgroup = mgroup.replaceAll("\\\\*}", "\\\\\\}");
-                mgroup = mgroup.replaceAll("\\?", "\\\\\\?");
-                mgroup = mgroup.replaceAll("\\.", "\\\\\\.");
+                mgroup = mgroup.replaceAll("\\\\*\\{", "\\\\{");
+                mgroup = mgroup.replaceAll("\\\\*}", "\\\\}");
+                mgroup = mgroup.replaceAll("\\?", "\\\\?");
+                mgroup = mgroup.replaceAll("\\.", "\\\\.");
 
-                s = s.replaceAll("\\\\*\\{", "\\{");
-                s = s.replaceAll("\\\\*}", "\\}");
+                s = s.replaceAll("\\\\*\\{", "{");
+                s = s.replaceAll("\\\\*}", "}");
                 s = s.replaceAll(mgroup, "");
             }
-            if (!s.trim().equals("")) {
+            if (!s.trim().isEmpty()) {
                 //System.out.println(s);
                 for (int i = 0; i < res.size(); i++) {
                     res.set(i, res.get(i) + s);
@@ -285,9 +285,9 @@ public class EDOALOutput extends Output {
 
     public ArrayList<String> setOfMINUSSubgraphs(String s) {
         s = s.replaceAll("[\n\t ]+", " ");
-        s = s.replaceAll("[\n\t ]+\\.", "\\.");
-        s = s.replaceAll("\\\\*\\{", "\\\\\\{");
-        s = s.replaceAll("\\\\*}", "\\\\\\}");
+        s = s.replaceAll("[\n\t ]+\\.", ".");
+        s = s.replaceAll("\\\\*\\{", "\\\\{");
+        s = s.replaceAll("\\\\*}", "\\\\}");
         s = s.replaceAll("minus", "MINUS");
         ArrayList<String> res = new ArrayList<>();
         Pattern pattern1 = Pattern.compile("MINUS *\\\\\\{([^\\\\}]+)\\\\}");
@@ -302,10 +302,10 @@ public class EDOALOutput extends Output {
     public ClassExpression subgraphFormToEDOALClass(String s, String focus) {
         ClassExpression expr = null;
         s = s.replaceAll("[\n\t ]+", " ");
-        s = s.replaceAll("[\n\t ]+\\.", "\\.");
-        s = s.replaceAll("\\\\*\\{", "\\\\\\{");
-        s = s.replaceAll("\\\\*}", "\\\\\\}");
-        focus = focus.replaceAll("\\?", "\\\\\\?");
+        s = s.replaceAll("[\n\t ]+\\.", ".");
+        s = s.replaceAll("\\\\*\\{", "\\\\{");
+        s = s.replaceAll("\\\\*}", "\\\\}");
+        focus = focus.replaceAll("\\?", "\\\\?");
         try {
             ArrayList<ClassExpression> expressions = new ArrayList<>();
 
@@ -313,7 +313,7 @@ public class EDOALOutput extends Output {
             Pattern pattern1 = Pattern.compile(focus + " <([^ ]+)>\\+? (\\?[A-Za-z\\d_-]+)\\.");
             Matcher matcher1 = pattern1.matcher(s);
             while (matcher1.find()) {
-                s = s.replaceAll(matcher1.group().replaceAll("\\?", "\\\\\\?"), "");
+                s = s.replaceAll(matcher1.group().replaceAll("\\?", "\\\\?"), "");
                 RelationId pred = new RelationId(new URI(matcher1.group(1).trim()));
                 ClassExpression newExpression = subgraphFormToEDOALClass(s, matcher1.group(2).trim());
 
@@ -327,7 +327,7 @@ public class EDOALOutput extends Output {
             Pattern pattern2 = Pattern.compile("(\\?[A-Za-z\\d_-]+) <([^>]+)>\\+? " + focus + "\\.");
             Matcher matcher2 = pattern2.matcher(s);
             while (matcher2.find()) {
-                s = s.replaceAll(matcher2.group().replaceAll("\\?", "\\\\\\?"), "");
+                s = s.replaceAll(matcher2.group().replaceAll("\\?", "\\\\?"), "");
                 Result result = getResult(s, matcher2);
 
                 if (result.newExpression() == null) { //It's a CIAE
@@ -342,7 +342,7 @@ public class EDOALOutput extends Output {
             Pattern pattern3 = Pattern.compile(focus + " (a)?(<http://www\\.w3\\.org/1999/02/22-rdf-syntax-ns#type>)? <([^>]+)>\\.");
             Matcher matcher3 = pattern3.matcher(s);
             while (matcher3.find()) { //It's a Class URI
-                s = s.replaceAll(matcher3.group().replaceAll("\\?", "\\\\\\?"), "");
+                s = s.replaceAll(matcher3.group().replaceAll("\\?", "\\\\?"), "");
                 ClassId classId = new ClassId(new URI(matcher3.group(3).trim()));
                 expressions.add(classId);
             }
@@ -351,7 +351,7 @@ public class EDOALOutput extends Output {
             Pattern pattern4 = Pattern.compile(focus + " <([^>]+)>\\+? <([^>]+)>\\.");
             Matcher matcher4 = pattern4.matcher(s);
             while (matcher4.find()) { //It's a CAV (instance)
-                s = s.replaceAll(matcher4.group().replaceAll("\\?", "\\\\\\?"), "");
+                s = s.replaceAll(matcher4.group().replaceAll("\\?", "\\\\?"), "");
                 RelationId pred = new RelationId(new URI(matcher4.group(1).trim()));
                 InstanceId inst = new InstanceId(new URI(matcher4.group(2).trim()));
                 expressions.add(new ClassValueRestriction(pred, Comparator.EQUAL, inst));
@@ -361,7 +361,7 @@ public class EDOALOutput extends Output {
             Pattern pattern5 = Pattern.compile("<([^>]+)> <([^>]+)>\\+? " + focus + "\\.");
             Matcher matcher5 = pattern5.matcher(s);
             while (matcher5.find()) { //It's a CIAV (instance)
-                s = s.replaceAll(matcher5.group().replaceAll("\\?", "\\\\\\?"), "");
+                s = s.replaceAll(matcher5.group().replaceAll("\\?", "\\\\?"), "");
                 RelationId predId = new RelationId(new URI(matcher5.group(2).trim()));
                 ArrayList<RelationExpression> setPredId = new ArrayList<>();
                 setPredId.add(predId);
@@ -374,7 +374,7 @@ public class EDOALOutput extends Output {
             Pattern pattern6 = Pattern.compile(focus + " <([^>]+)>\\+? \"([^\"]+)\"\\.");
             Matcher matcher6 = pattern6.matcher(s);
             while (matcher6.find()) { //It's a CAV (value)
-                s = s.replaceAll(matcher6.group().replaceAll("\\?", "\\\\\\?"), "");
+                s = s.replaceAll(matcher6.group().replaceAll("\\?", "\\\\?"), "");
                 RelationId pred = new RelationId(new URI(matcher6.group(1).trim()));
                 Value value = new Value(matcher6.group(2).trim());
                 expressions.add(new ClassValueRestriction(pred, Comparator.EQUAL, value));
@@ -384,7 +384,7 @@ public class EDOALOutput extends Output {
             Pattern pattern7 = Pattern.compile(focus + " <([^>]+)>\\+? \\\\\\{([^\\\\}]+)\\\\}\\.");
             Matcher matcher7 = pattern7.matcher(s);
             while (matcher7.find()) { //It's a U(CAV)
-                s = s.replaceAll(matcher7.group().replaceAll("\\?", "\\\\\\?"), "");
+                s = s.replaceAll(matcher7.group().replaceAll("\\?", "\\\\?"), "");
                 ArrayList<ClassExpression> setOfCAV = new ArrayList<>();
                 RelationId pred = new RelationId(new URI(matcher7.group(1).trim()));
                 String[] values = matcher7.group(2).trim().split(",");
@@ -404,7 +404,7 @@ public class EDOALOutput extends Output {
             Pattern pattern8 = Pattern.compile("\\\\\\{([^\\\\}]+)\\\\} <([^>]+)>\\+? " + focus + "\\.");
             Matcher matcher8 = pattern8.matcher(s);
             while (matcher8.find()) { //It's a U(CIAV)
-                s = s.replaceAll(matcher8.group().replaceAll("\\?", "\\\\\\?"), "");
+                s = s.replaceAll(matcher8.group().replaceAll("\\?", "\\\\?"), "");
                 ArrayList<ClassExpression> setOfCAV = new ArrayList<>();
                 RelationId predId = new RelationId(new URI(matcher8.group(2).trim()));
                 ArrayList<RelationExpression> setPredId = new ArrayList<>();
@@ -469,7 +469,7 @@ public class EDOALOutput extends Output {
             Pattern pattern13 = Pattern.compile(focus + " \\\\\\{([^\\\\}]+)\\\\} \"([^\"]+)\"\\.");
             Matcher matcher13 = pattern13.matcher(s);
             while (matcher13.find()) { //It's a C(UA)V
-                s = s.replaceAll(matcher13.group().replaceAll("\\?", "\\\\\\?"), "");
+                s = s.replaceAll(matcher13.group().replaceAll("\\?", "\\\\?"), "");
                 RelationConstruction relConstr = getRelationConstruction(matcher13);
                 Value val = new Value(matcher13.group(2).trim());
                 expressions.add(new ClassValueRestriction(relConstr, Comparator.EQUAL, val));
@@ -512,9 +512,9 @@ public class EDOALOutput extends Output {
 
     public RelationExpression subgraphFormToEDOALProperty(String s, String focus1, String focus2) {
         s = s.replaceAll("[\n\t ]+", " ");
-        s = s.replaceAll("[\n\t ]+\\.", "\\.");
-        s = s.replaceAll("\\\\*\\{", "\\\\\\{");
-        s = s.replaceAll("\\\\*}", "\\\\\\}");
+        s = s.replaceAll("[\n\t ]+\\.", ".");
+        s = s.replaceAll("\\\\*\\{", "\\\\{");
+        s = s.replaceAll("\\\\*}", "\\\\}");
         s = s.replaceAll("\\+", "");
         String sCopy = s;
         HashMap<String, SPARQLNode> nodes = new HashMap<>();
@@ -523,7 +523,7 @@ public class EDOALOutput extends Output {
         Pattern pattern1 = Pattern.compile("(\\?[A-Za-z\\d_-]+) <[^>]+> (\\?[A-Za-z\\d_-]+)\\.");
         Matcher matcher1 = pattern1.matcher(s);
         while (matcher1.find()) {
-            s = s.replaceAll(matcher1.group().replaceAll("\\?", "\\\\\\?"), "");
+            s = s.replaceAll(matcher1.group().replaceAll("\\?", "\\\\?"), "");
             String n1 = matcher1.group(1);
             String n2 = matcher1.group(2);
             String triple = matcher1.group();
@@ -582,7 +582,7 @@ public class EDOALOutput extends Output {
                 Pattern pattern2 = Pattern.compile("(\\?[A-Za-z\\d_-]+) <([^>]+)> (\\?[A-Za-z\\d_-]+)\\.");
                 Matcher matcher2 = pattern2.matcher(triple);
                 if (matcher2.find()) {
-                    sCopy = sCopy.replaceAll(matcher2.group().replaceAll("\\?", "\\\\\\?"), "");
+                    sCopy = sCopy.replaceAll(matcher2.group().replaceAll("\\?", "\\\\?"), "");
                     properties.add(0, matcher2.group(2));
 
                     if (matcher2.group(1).equals(currNode.getName())) {

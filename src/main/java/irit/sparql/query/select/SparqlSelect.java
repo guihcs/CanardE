@@ -70,14 +70,6 @@ public class SparqlSelect extends SparqlQuery {
 
     }
 
-    public String getSelect() {
-        return select;
-    }
-
-    public void setSelect(String select) {
-        this.select = select;
-    }
-
     public String toString() {
         return mainQuery;
     }
@@ -95,12 +87,12 @@ public class SparqlSelect extends SparqlQuery {
                 i++;
             }
         } else {
-            ret = ret.replaceAll(selectFocus.get(0).replaceAll("\\?", "\\\\?") + " ", "\\?answer ");
-            ret = ret.replaceAll(selectFocus.get(0).replaceAll("\\?", "\\\\?") + "\\.", "\\?answer.");
-            ret = ret.replaceAll(selectFocus.get(0).replaceAll("\\?", "\\\\?") + "}", "\\?answer}");
-            ret = ret.replaceAll(selectFocus.get(0).replaceAll("\\?", "\\\\?") + "\\)", "\\?answer)");
+            ret = ret.replaceAll(selectFocus.get(0).replaceAll("\\?", "\\\\?") + " ", "?answer ");
+            ret = ret.replaceAll(selectFocus.get(0).replaceAll("\\?", "\\\\?") + "\\.", "?answer.");
+            ret = ret.replaceAll(selectFocus.get(0).replaceAll("\\?", "\\\\?") + "}", "?answer}");
+            ret = ret.replaceAll(selectFocus.get(0).replaceAll("\\?", "\\\\?") + "\\)", "?answer)");
         }
-        return ret.replaceAll("\n", " ").replaceAll("\"", "\\\"");
+        return ret.replaceAll("\n", " ").replaceAll("\"", "\"");
     }
 
     public ArrayList<String> getSelectFocus() {

@@ -24,7 +24,7 @@ public abstract class Answer {
     public void retrieveIRILabels(String endpointURL) {
     }
 
-    public HashSet<InstantiatedSubgraph> findCorrespondingSubGraph(SparqlSelect query, String targetEndpoint, double similarityThreshold) throws SparqlEndpointUnreachableException, SparqlQueryMalFormedException {
+    public HashSet<InstantiatedSubgraph> findCorrespondingSubGraph(SparqlSelect query, String targetEndpoint, double similarityThreshold) {
         return new HashSet<>();
     }
 
