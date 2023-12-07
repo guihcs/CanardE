@@ -1,7 +1,7 @@
 package irit.similarity;
 
 import org.apache.commons.text.similarity.LevenshteinDistance;
-import org.apache.jena.base.Sys;
+
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -90,7 +90,7 @@ public class EmbeddingManager {
             keys.add(line);
         }
 
-        for (int i = 0; i < keys.size(); i++) {
+        for (String key : keys) {
             String[] split = scanner.nextLine().split(" ");
 
             double[] de = new double[split.length];
@@ -99,7 +99,7 @@ public class EmbeddingManager {
             }
             INDArray indArray = Nd4j.create(de);
             if (embshape == null) EmbeddingManager.embshape = indArray.shape();
-            EmbeddingManager.embs1.put(keys.get(i), indArray);
+            EmbeddingManager.embs1.put(key, indArray);
         }
     }
 
@@ -117,20 +117,6 @@ public class EmbeddingManager {
             return Nd4j.zeros(DataType.DOUBLE, embshape);
         }
         return embs1.get(e1);
-    }
-
-
-    private static String processLabel(String line) {
-        line = line.replaceAll("\\\\n", "n").trim();
-        if (line.startsWith("http://") && line.contains("#")) {
-            String[] split = line.split("#");
-            if (split.length > 1) {
-                line = split[1];
-            } else {
-                line = split[0];
-            }
-        }
-        return line;
     }
 
 }

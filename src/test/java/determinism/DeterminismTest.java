@@ -8,6 +8,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -22,7 +23,7 @@ public class DeterminismTest {
 
 
     @BeforeAll
-    public static void setup() {
+    public static void setup() throws IOException {
         DatasetManager.getInstance().load(sourceName, source);
         DatasetManager.getInstance().load(targetName, target);
     }
