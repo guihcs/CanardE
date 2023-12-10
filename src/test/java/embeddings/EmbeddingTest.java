@@ -1,0 +1,45 @@
+package embeddings;
+
+import irit.similarity.EmbeddingManager;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+
+import java.io.File;
+import java.io.IOException;
+import java.net.URL;
+import java.nio.file.Files;
+import java.util.Arrays;
+
+public class EmbeddingTest {
+
+
+    @Test
+    public void testRead() throws IOException {
+
+        URL resource = EmbeddingTest.class.getResource("../line.txt");
+
+        String line = Files.readAllLines(new File(resource.getFile()).toPath()).getFirst();
+
+
+        String[] split = line.split(" ");
+
+        double[] de = new double[split.length];
+        for (int j = 0; j < split.length; j++) {
+            de[j] = Double.parseDouble(split[j]);
+        }
+
+        double[] doubles = EmbeddingManager.doublesFromLine(line);
+
+        Assertions.assertEquals(de.length, doubles.length);
+
+        for (int i = 0; i < de.length; i++) {
+            Assertions.assertEquals(de[i], doubles[i], 1e-12);
+        }
+
+    }
+
+
+
+
+
+}

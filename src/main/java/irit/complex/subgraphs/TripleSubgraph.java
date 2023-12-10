@@ -2,6 +2,7 @@ package irit.complex.subgraphs;
 
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.Set;
 
 public class TripleSubgraph extends SubgraphForOutput {
 
@@ -26,19 +27,19 @@ public class TripleSubgraph extends SubgraphForOutput {
 
     public boolean addSubgraph(Triple t) {
         boolean added = false;
-        if (triples.get(0).toString().equals(t.toString())) {
+        if (triples.getFirst().toString().equals(t.toString())) {
             triples.add(t);
             added = true;
-        } else if (triples.get(0).hasCommonPart(t) && commonPart == TripleType.NONE) {
-            if (!triples.get(0).getPredicate().toString().equals("<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>") || triples.get(0).commonPartValue(t) != TripleType.PREDICATE) {
+        } else if (triples.getFirst().hasCommonPart(t) && commonPart == TripleType.NONE) {
+            if (!triples.getFirst().getPredicate().toString().equals("<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>") || triples.getFirst().commonPartValue(t) != TripleType.PREDICATE) {
                 addSimilarity(t);
                 triples.add(t);
-                commonPart = triples.get(0).commonPartValue(t);
+                commonPart = triples.getFirst().commonPartValue(t);
                 added = true;
             }
 
-        } else if (triples.get(0).hasCommonPart(t) && triples.get(0).commonPartValue(t) == commonPart) {
-            if (!triples.get(0).getPredicate().toString().equals("<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>") || commonPart != TripleType.PREDICATE) {
+        } else if (triples.getFirst().hasCommonPart(t) && triples.getFirst().commonPartValue(t) == commonPart) {
+            if (!triples.getFirst().getPredicate().toString().equals("<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>") || commonPart != TripleType.PREDICATE) {
                 addSimilarity(t);
                 triples.add(t);
                 added = true;
@@ -53,11 +54,11 @@ public class TripleSubgraph extends SubgraphForOutput {
     }
 
     public void calculateIntensionString() {
-        String res = triples.get(0).toString();
-        Triple t = triples.get(0);
-        HashSet<String> concatSub = new HashSet<>();
-        HashSet<String> concatPred = new HashSet<>();
-        HashSet<String> concatObj = new HashSet<>();
+        String res = triples.getFirst().toString();
+        Triple t = triples.getFirst();
+        Set<String> concatSub = new HashSet<>();
+        Set<String> concatPred = new HashSet<>();
+        Set<String> concatObj = new HashSet<>();
         fillSets(concatSub, concatPred, concatObj);
         if (t.isSubjectTriple() && !t.getPredicate().toString().equals("<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>")) {
             if (commonPart == TripleType.PREDICATE && concatObj.size() > 1) {
@@ -86,7 +87,7 @@ public class TripleSubgraph extends SubgraphForOutput {
         intension = res;
     }
 
-    private void fillSets(HashSet<String> concatSub, HashSet<String> concatPred, HashSet<String> concatObj) {
+    private void fillSets(Set<String> concatSub, Set<String> concatPred, Set<String> concatObj) {
         for (Triple t1 : triples) {
             concatSub.add(t1.getSubject().toString());
             concatPred.add(t1.getPredicate().toString());
@@ -166,7 +167,7 @@ public class TripleSubgraph extends SubgraphForOutput {
         if (toIntensionString().equals(extension)) {
             res = new StringBuilder(extension);
         } else if (unionMembers.size() > 1) {
-            res.append("{").append(unionMembers.get(0)).append("}\n");
+            res.append("{").append(unionMembers.getFirst()).append("}\n");
             for (int i = 1; i < unionMembers.size(); i++) {
                 res.append("UNION {").append(unionMembers.get(i)).append("}\n");
             }

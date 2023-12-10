@@ -2,7 +2,10 @@ package irit.output;
 
 import irit.complex.subgraphs.SubgraphForOutput;
 import irit.sparql.query.select.SparqlSelect;
+import org.semanticweb.owl.align.AlignmentException;
 
+import java.io.IOException;
+import java.net.URISyntaxException;
 import java.util.List;
 
 public abstract class Output {
@@ -16,13 +19,13 @@ public abstract class Output {
 
     }
 
-    public void init() {
+    public void init() throws AlignmentException, URISyntaxException {
     }
 
-    public void addToOutput(List<SubgraphForOutput> output, SparqlSelect sq) {
+    public void addToOutput(List<SubgraphForOutput> output, SparqlSelect sq) throws AlignmentException, URISyntaxException {
     }
 
-    public void end() {
+    public void end() throws IOException, AlignmentException {
     }
 
 }

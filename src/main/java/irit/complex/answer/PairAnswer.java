@@ -6,9 +6,7 @@ import irit.resource.IRI;
 import irit.resource.Resource;
 import irit.sparql.query.select.SparqlSelect;
 
-import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 public class PairAnswer extends Answer {
@@ -118,7 +116,7 @@ public class PairAnswer extends Answer {
         return paths;
     }
 
-    public void queryPaths(String targetEndpoint, HashSet<InstantiatedSubgraph> paths, Set<String> queryLabels, Resource x, Resource y) {
+    public void queryPaths(String targetEndpoint, Set<InstantiatedSubgraph> paths, Set<String> queryLabels, Resource x, Resource y) {
 
         Path p = new Path(x, y, targetEndpoint, 5);
         if (!p.pathFound()) return;
@@ -156,14 +154,6 @@ public class PairAnswer extends Answer {
 
     public String printMatchedEquivalents() {
         return r1.getSimilarIRIs().toString() + " <--> " + r2.getSimilarIRIs().toString();
-    }
-
-    public Resource getR1() {
-        return r1;
-    }
-
-    public Resource getR2() {
-        return r2;
     }
 
 }

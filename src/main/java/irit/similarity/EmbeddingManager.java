@@ -23,11 +23,11 @@ public class EmbeddingManager {
     public static long[] embshape;
     private static final LevenshteinDistance levenshteinDistance = LevenshteinDistance.getDefaultInstance();
 
-    public static double similarity(Set<String> labels1, HashSet<String> labels2, double threshold) {
+    public static double similarity(Set<String> labels1, Collection<String> labels2, double threshold) {
         return EmbeddingManager.embs1.isEmpty() ? stringSimilarity(labels1, labels2, threshold) : embeddingSimilarity(labels1, labels2, threshold);
     }
 
-    public static double embeddingSimilarity(Set<String> labels1, HashSet<String> labels2, double threshold) {
+    public static double embeddingSimilarity(Set<String> labels1, Collection<String> labels2, double threshold) {
         double score = 0;
 
         Set<String> lab1 = labels1.stream().map(s -> s.replaceAll("\n+", " ")).collect(Collectors.toSet());
@@ -47,7 +47,7 @@ public class EmbeddingManager {
         return score;
     }
 
-    public static double stringSimilarity(Set<String> labels1, HashSet<String> labels2, double threshold) {
+    public static double stringSimilarity(Set<String> labels1, Collection<String> labels2, double threshold) {
         double score = 0;
 
         Set<String> lab1 = labels1.stream().map(EmbeddingManager::getSuffix).map(String::toLowerCase).collect(Collectors.toSet());
@@ -91,18 +91,85 @@ public class EmbeddingManager {
         }
 
         for (String key : keys) {
-            String[] split = scanner.nextLine().split(" ");
 
-            double[] de = new double[split.length];
-            for (int j = 0; j < split.length; j++) {
-                de[j] = Double.parseDouble(split[j]);
-            }
-            INDArray indArray = Nd4j.create(de);
+            INDArray indArray = Nd4j.create(doublesFromLine(scanner.nextLine()));
             if (embshape == null) EmbeddingManager.embshape = indArray.shape();
             EmbeddingManager.embs1.put(key, indArray);
         }
     }
 
+
+    public static double[] doublesFromLine(String line) {
+        double[] doubles = new double[100];
+        int size = 0;
+
+        double pref = 1.0;
+        double value = 0.0;
+        boolean dot = false;
+        double currentExp = 0.1;
+        boolean readExp = false;
+        double epref = 1.0;
+        double exp = 0.0;
+
+        for (char c : line.toCharArray()) {
+            if (c == '-') {
+                if (readExp) {
+                    epref = -1.0;
+                } else {
+                    pref = -1.0;
+                }
+            } else if (Character.isDigit(c)) {
+                if (!dot) {
+                    value = value * 10 + Character.getNumericValue(c);
+                } else {
+                    value = value + Character.getNumericValue(c) * currentExp;
+                    currentExp *= 0.1;
+                }
+
+                if (readExp) {
+                    exp = exp * 10 + Character.getNumericValue(c);
+                }
+            } else if (c == '.') {
+                dot = true;
+            } else if (c == ' ') {
+                value = value * pref;
+
+                if (readExp) {
+                    value = value * Math.pow(10, exp * epref);
+                }
+
+
+                if (size == doubles.length) {
+                    doubles = Arrays.copyOf(doubles, size * 2);
+                }
+
+                doubles[size] = value;
+                size++;
+                pref = 1.0;
+                value = 0.0;
+                dot = false;
+                currentExp = 0.1;
+                readExp = false;
+                epref = 1.0;
+                exp = 0.0;
+            } else if (c == 'e') {
+                readExp = true;
+            } else {
+                throw new RuntimeException("Unknown char " + c);
+            }
+
+        }
+        value = value * pref;
+
+        if (size == doubles.length) {
+            doubles = Arrays.copyOf(doubles, size * 2);
+        }
+
+        doubles[size] = value;
+        size++;
+
+        return Arrays.copyOf(doubles, size);
+    }
 
     public static void loadEmbeddings(List<String> paths) throws IOException {
         for(String path : paths) {

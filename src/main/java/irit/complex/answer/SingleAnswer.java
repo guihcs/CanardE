@@ -6,11 +6,10 @@ import irit.complex.subgraphs.TripleType;
 import irit.resource.IRI;
 import irit.resource.Resource;
 import irit.sparql.SparqlProxy;
-import irit.sparql.query.exception.SparqlEndpointUnreachableException;
-import irit.sparql.query.exception.SparqlQueryMalFormedException;
 import irit.sparql.query.select.SparqlSelect;
 import org.apache.jena.rdf.model.RDFNode;
 
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -36,7 +35,7 @@ public class SingleAnswer extends Answer {
         }
     }
 
-    public void getSimilarIRIs(String targetEndpoint) {
+    public void getSimilarIRIs(String targetEndpoint) throws Exception {
         if (res.getSimilarIRIs().isEmpty()) {
             res.findSimilarResource(targetEndpoint);
         }
@@ -50,8 +49,7 @@ public class SingleAnswer extends Answer {
 
     public HashSet<InstantiatedSubgraph> findCorrespondingSubGraph(SparqlSelect query, String targetEndpoint, double similarityThreshold) {
 
-        HashSet<String> queryLabels = query.getLabels();
-
+        Collection<String> queryLabels = query.getLabels();
 
         double maxSim = -1;
         Triple bestTriple = new Triple();
@@ -181,10 +179,6 @@ public class SingleAnswer extends Answer {
 
     public boolean hasMatch() {
         return !res.getSimilarIRIs().isEmpty();
-    }
-
-    public String printMatchedEquivalents() {
-        return res.getSimilarIRIs().toString();
     }
 
 }

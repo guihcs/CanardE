@@ -67,8 +67,8 @@ public class SubgraphForOutput implements Comparable<SubgraphForOutput> {
                 if (response.containsKey("answer1")) {
                     Resource r1 = new Resource(response.get("answer0").toString());
                     Resource r2 = new Resource(response.get("answer1").toString());
-                    ArrayList<Resource> valuesr1Source = new ArrayList<>();
-                    ArrayList<Resource> valuesr2Source = new ArrayList<>();
+                    List<Resource> valuesr1Source = new ArrayList<>();
+                    List<Resource> valuesr2Source = new ArrayList<>();
 
                     if (r1.isIRI()) {
                         r1 = new IRI("<" + r1 + ">");
@@ -106,7 +106,7 @@ public class SubgraphForOutput implements Comparable<SubgraphForOutput> {
                         }
                     }
                 }
-            }// get target answers
+            }
             if (resultS.size() < limit) {
                 end = true;
             } else {

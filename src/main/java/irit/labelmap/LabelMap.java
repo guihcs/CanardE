@@ -176,10 +176,6 @@ public class LabelMap {
     }
 
 
-
-
-
-
     public List<Map<String, String>> pathBetween(String v1, String v2, int maxDepth) {
         if (v1.equals(v2)) return List.of();
         Set<String> visited = new HashSet<>();
@@ -197,8 +193,8 @@ public class LabelMap {
                 }
 
                 Map<String, String> map = new HashMap<>();
-                map.put("v1", result.remove(result.size() - 1));
-                map.put("v2", result.remove(0));
+                map.put("v1", result.removeLast());
+                map.put("v2", result.removeFirst());
 
                 for (int i = 0, j = 1; i < result.size(); i++) {
                     if (i % 2 == 1) continue;

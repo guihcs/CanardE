@@ -3,10 +3,10 @@ package irit.complex.subgraphs;
 import irit.resource.IRI;
 import irit.resource.Resource;
 import irit.similarity.EmbeddingManager;
-import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.ops.transforms.Transforms;
 
+import java.util.Collection;
 import java.util.HashSet;
+import java.util.Set;
 
 public class Triple extends InstantiatedSubgraph {
     private final IRI subject;
@@ -27,14 +27,14 @@ public class Triple extends InstantiatedSubgraph {
         predicate = new IRI("");
     }
 
-    public Triple(String sub, String pred, String obj, TripleType type) {
-        subject = new IRI(sub);
-        predicate = new IRI(pred);
-        Resource r = new Resource(obj);
+    public Triple(String subject, String predicate, String object, TripleType type) {
+        this.subject = new IRI(subject);
+        this.predicate = new IRI(predicate);
+        Resource r = new Resource(object);
         if (r.isIRI()) {
-            object = new IRI("<" + obj.replaceAll("[<>]", "") + ">");
+            this.object = new IRI("<" + object.replaceAll("[<>]", "") + ">");
         } else {
-            object = r;
+            this.object = r;
         }
         tripleType = type;
         keepObjectType = false;
@@ -69,24 +69,7 @@ public class Triple extends InstantiatedSubgraph {
     }
 
 
-    public double compareSim(INDArray label, double threshold) {
-        if (tripleType != TripleType.SUBJECT) {
-            subjectSimilarity = Transforms.cosineSim(EmbeddingManager.get(subject.toString().replaceAll("[<>]", "")), label);
-            subjectSimilarity = subjectSimilarity >= threshold ? subjectSimilarity : 0;
-        }
-        if (tripleType != TripleType.PREDICATE && !predicate.toString().equals("<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>")) {
-            predicateSimilarity = Transforms.cosineSim(EmbeddingManager.get(predicate.toString().replaceAll("[<>]", "")), label);
-            predicateSimilarity = predicateSimilarity >= threshold ? predicateSimilarity : 0;
-        }
-        if (tripleType != TripleType.OBJECT) {
-            objectSimilarity = Transforms.cosineSim(EmbeddingManager.get(object.toString().replaceAll("[<>]", "")), label);
-            objectSimilarity = objectSimilarity >= threshold ? objectSimilarity : 0;
-        }
-
-        return subjectSimilarity + predicateSimilarity + objectSimilarity;
-    }
-
-    public double compareLabel(HashSet<String> targetLabels, double threshold, String targetEndpoint) {
+    public double compareLabel(Collection<String> targetLabels, double threshold, String targetEndpoint) {
         if (tripleType != TripleType.SUBJECT) {
             subjectType = subject.findMostSimilarType(targetEndpoint, targetLabels, threshold);
             double scoreTypeSubMax = 0;
@@ -114,7 +97,7 @@ public class Triple extends InstantiatedSubgraph {
             }
 
         } else if (tripleType != TripleType.OBJECT) {
-            HashSet<String> hashObj = new HashSet<>();
+            Set<String> hashObj = new HashSet<>();
             hashObj.add(object.toString());
             objectSimilarity = EmbeddingManager.similarity(hashObj, targetLabels, threshold);
         }

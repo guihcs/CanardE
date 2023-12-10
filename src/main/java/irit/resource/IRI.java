@@ -4,10 +4,7 @@ import irit.complex.subgraphs.Triple;
 import irit.dataset.DatasetManager;
 import irit.similarity.EmbeddingManager;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -20,9 +17,9 @@ public class IRI extends Resource {
 
     public IRI(String iri) {
         super(iri);
-        labels = ConcurrentHashMap.newKeySet();
-        triples = ConcurrentHashMap.newKeySet();
-        types = ConcurrentHashMap.newKeySet();
+        labels = new HashSet<>();
+        triples = new HashSet<>();
+        types = new HashSet<>();
         labelsGot = false;
         triplesRetrieved = false;
     }
@@ -51,7 +48,6 @@ public class IRI extends Resource {
         Pattern pattern = Pattern.compile("<([^>]+)[#/]([A-Za-z0-9_-]+)>");
         Matcher matcher = pattern.matcher(value);
         if (matcher.find()) {
-            //System.out.println(value +" "+matcher.group(2));
             return matcher.group(2);
         } else {
             return value;
@@ -70,7 +66,7 @@ public class IRI extends Resource {
         }
     }
 
-    public IRI findMostSimilarType(String endpointUrl, HashSet<String> targetLabels, double threshold) {
+    public IRI findMostSimilarType(String endpointUrl, Collection<String> targetLabels, double threshold) {
         if (getTypes().isEmpty()) {
             retrieveTypes(endpointUrl);
         }
@@ -95,7 +91,7 @@ public class IRI extends Resource {
 
     public void findExistingMatches(final String sourceEndpoint, final String targetEndpoint) {
 
-        ArrayList<IRI> allMatches = new ArrayList<>();
+        List<IRI> allMatches = new ArrayList<>();
 
         allMatches.add(this);
 

@@ -5,8 +5,8 @@ import java.util.List;
 
 public class Tree<V> {
 
-    V value;
-    List<Tree<V>> children;
+    final V value;
+    final List<Tree<V>> children;
     final Tree<V> parent;
     final int depth;
 

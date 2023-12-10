@@ -13,7 +13,7 @@ public class PathSubgraph extends SubgraphForOutput {
 
     public boolean addSubgraph(Path p) {
         boolean added = false;
-        if (p.toSubGraphString().equals(paths.get(0).toSubGraphString())) {
+        if (p.toSubGraphString().equals(paths.getFirst().toSubGraphString())) {
             addSimilarity(p);
             paths.add(p);
             added = true;
@@ -26,20 +26,20 @@ public class PathSubgraph extends SubgraphForOutput {
     }
 
     public String toExtensionString() {
-        return paths.get(0).toSubGraphString();
+        return paths.getFirst().toSubGraphString();
     }
 
     public String toSPARQLForm() {
         return "SELECT distinct ?answer0 ?answer1 WHERE {\n" +
-                paths.get(0).toSubGraphString() + "}";
+                paths.getFirst().toSubGraphString() + "}";
     }
 
     public String toIntensionString() {
-        return paths.get(0).toSubGraphString();
+        return paths.getFirst().toSubGraphString();
     }
 
     public Path getMainPath() {
-        return paths.get(0);
+        return paths.getFirst();
     }
 
 

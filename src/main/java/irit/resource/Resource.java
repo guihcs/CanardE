@@ -2,10 +2,12 @@ package irit.resource;
 
 import irit.complex.answer.QueryTemplate;
 import irit.sparql.SparqlProxy;
-import irit.sparql.exceptions.IncompleteSubstitutionException;
 import org.apache.jena.rdf.model.RDFNode;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -14,10 +16,11 @@ public class Resource {
     protected final String value;
     public final HashSet<IRI> similarIRIs;
     private final Pattern pattern = Pattern.compile("[a-z][/:#]");
+    private static final Pattern inp = Pattern.compile("\\\\");
+
 
     public Resource(String val) {
-        Pattern inp = Pattern.compile("\\\\");
-        value = inp.matcher(val).replaceAll("");
+        value = Resource.inp.matcher(val).replaceAll("");
         similarIRIs = new HashSet<>();
     }
 
@@ -26,11 +29,10 @@ public class Resource {
         return !value.contains(" ") && matcher.find();
     }
 
-    final QueryTemplate similar = new QueryTemplate("""
+    static final QueryTemplate similar = new QueryTemplate("""
             PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
             PREFIX skos-xl: <http://www.w3.org/2008/05/skos-xl#>
             PREFIX owl: <http://www.w3.org/2002/07/owl#>
-
 
             SELECT DISTINCT ?x WHERE {
             {?x ?z ?label.}
@@ -39,65 +41,35 @@ public class Resource {
             filter (regex(?label, "^{{labelValue}}$","i")).
             }""");
 
-    public String getSimilarQuery(Map<String, String> substitution){
-        String query = "";
-        try {
-            query = similar.substitute(substitution);
-        } catch (IncompleteSubstitutionException e) {
-            e.printStackTrace();
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-        return query;
-    }
 
-    public void findSimilarResource(String targetEndpoint) {
+    public void findSimilarResource(String targetEndpoint) throws Exception {
         Map<String, String> substitution = new HashMap<>();
         substitution.put("labelValue", value);
-        if (value.length()>1){
+        if (value.length() > 1) {
             substitution.put("LabelValue", value.substring(0, 1).toUpperCase() + value.substring(1));
+        } else {
+            substitution.put("LabelValue", "\"" + value.toUpperCase() + "\"");
         }
-        else{
-            substitution.put("LabelValue", "\""+value.toUpperCase()+"\"");
-        }
-        String query = getSimilarQuery(substitution);
-        //System.out.println(query);
+
+        querySimilarIri(substitution, targetEndpoint);
+
+        substitution.put("labelValue", "\"" + value.substring(0, 1).toUpperCase() + value.substring(1) + "\"@en");
+        querySimilarIri(substitution, targetEndpoint);
+
+        substitution.put("labelValue", "\"" + value.substring(0, 1).toUpperCase() + value.substring(1) + "\"");
+        querySimilarIri(substitution, targetEndpoint);
+
+    }
+
+    private void querySimilarIri(Map<String, String> substitution, String targetEndpoint) throws Exception {
+        String query = Resource.similar.substitute(substitution);
 
         List<Map<String, RDFNode>> ret = SparqlProxy.query(targetEndpoint, query);
 
-        Iterator<Map<String, RDFNode>> retIterator = ret.iterator();
-        while (retIterator.hasNext()) {
-            String s = retIterator.next().get("x").toString().replaceAll("\"", "");
-            //System.out.println(s);
-            similarIRIs.add(new IRI("<"+s+">"));
+        for (Map<String, RDFNode> stringRDFNodeMap : ret) {
+            String s = stringRDFNodeMap.get("x").toString().replaceAll("\"", "");
+            similarIRIs.add(new IRI("<" + s + ">"));
         }
-
-        substitution.put("labelValue", "\""+value.substring(0, 1).toUpperCase() + value.substring(1)+"\"@en");
-        query = getSimilarQuery(substitution);
-        //System.out.println(query);
-
-        ret = SparqlProxy.query(targetEndpoint, query);
-
-        retIterator = ret.iterator();
-        while (retIterator.hasNext()) {
-            String s = retIterator.next().get("x").toString().replaceAll("\"", "");
-            //System.out.println(s);
-            similarIRIs.add(new IRI("<"+s+">"));
-        }
-
-        substitution.put("labelValue", "\""+value.substring(0, 1).toUpperCase() + value.substring(1)+"\"");
-        query = getSimilarQuery(substitution);
-        //System.out.println(query);
-
-        ret = SparqlProxy.query(targetEndpoint, query);
-
-        retIterator = ret.iterator();
-        while (retIterator.hasNext()) {
-            String s = retIterator.next().get("x").toString().replaceAll("\"", "");
-            //System.out.println(s);
-            similarIRIs.add(new IRI("<"+s+">"));
-        }
-
     }
 
     public String toValueString() {

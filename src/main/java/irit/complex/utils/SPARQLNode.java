@@ -1,6 +1,7 @@
 package irit.complex.utils;
 
 import java.util.HashMap;
+import java.util.Map;
 
 public class SPARQLNode {
 
@@ -19,7 +20,6 @@ public class SPARQLNode {
 
     public void addNeighbour(SPARQLNode neighbor, String triple) {
         if (neighbors.containsKey(neighbor.getName())) {
-            //triples.put(neighbor.getName(), triples.get(neighbor.getName())+ " "+triple);
             System.out.println("more than one prop: " + triples.get(neighbor.getName()) + " " + triple);
         } else {
             neighbors.put(neighbor.getName(), neighbor);
@@ -27,7 +27,7 @@ public class SPARQLNode {
         }
     }
 
-    public HashMap<String, SPARQLNode> getNeighbors() {
+    public Map<String, SPARQLNode> getNeighbors() {
         return neighbors;
     }
 

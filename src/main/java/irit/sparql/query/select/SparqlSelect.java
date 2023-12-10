@@ -6,17 +6,13 @@ import irit.sparql.query.SparqlQuery;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 
 public class SparqlSelect extends SparqlQuery {
-    private final ArrayList<String> selectFocus;
-    private String select;
+    private final List<String> selectFocus;
 
     public SparqlSelect(String query) {
         super(query);
@@ -37,15 +33,7 @@ public class SparqlSelect extends SparqlQuery {
             }
             where = matcher.group(3).trim();
         }
-        Pattern pattern2 = Pattern.compile("""
-                select([ \t
-                distncDISTNC]+\\?[A-Za-z\\d_-]+[ \t
-                ]+\\?*[A-Za-z\\d_-]*[ \t
-                ]*)where""");
-        Matcher matcher2 = pattern2.matcher(mainQuery);
-        if (matcher2.find()) {
-            select = matcher2.group(1);
-        }
+
 
 
     }
@@ -87,15 +75,15 @@ public class SparqlSelect extends SparqlQuery {
                 i++;
             }
         } else {
-            ret = ret.replaceAll(selectFocus.get(0).replaceAll("\\?", "\\\\?") + " ", "?answer ");
-            ret = ret.replaceAll(selectFocus.get(0).replaceAll("\\?", "\\\\?") + "\\.", "?answer.");
-            ret = ret.replaceAll(selectFocus.get(0).replaceAll("\\?", "\\\\?") + "}", "?answer}");
-            ret = ret.replaceAll(selectFocus.get(0).replaceAll("\\?", "\\\\?") + "\\)", "?answer)");
+            ret = ret.replaceAll(selectFocus.getFirst().replaceAll("\\?", "\\\\?") + " ", "?answer ");
+            ret = ret.replaceAll(selectFocus.getFirst().replaceAll("\\?", "\\\\?") + "\\.", "?answer.");
+            ret = ret.replaceAll(selectFocus.getFirst().replaceAll("\\?", "\\\\?") + "}", "?answer}");
+            ret = ret.replaceAll(selectFocus.getFirst().replaceAll("\\?", "\\\\?") + "\\)", "?answer)");
         }
         return ret.replaceAll("\n", " ").replaceAll("\"", "\"");
     }
 
-    public ArrayList<String> getSelectFocus() {
+    public List<String> getSelectFocus() {
         return selectFocus;
     }
 
@@ -104,8 +92,8 @@ public class SparqlSelect extends SparqlQuery {
     }
 
 
-    public HashSet<String> getLabels() {
-        HashSet<String> queryLabels = new HashSet<>();
+    public Set<String> getLabels() {
+        Set<String> queryLabels = new HashSet<>();
 
         for (Map.Entry<String, IRI> iri : getIRIList().entrySet()) {
             queryLabels.addAll(iri.getValue().getLabels());

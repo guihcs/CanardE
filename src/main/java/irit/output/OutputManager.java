@@ -2,7 +2,10 @@ package irit.output;
 
 import irit.complex.subgraphs.SubgraphForOutput;
 import irit.sparql.query.select.SparqlSelect;
+import org.semanticweb.owl.align.AlignmentException;
 
+import java.io.IOException;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -12,7 +15,7 @@ public class OutputManager {
 
     private Map<Float, ArrayList<Output>> outputs;
 
-    public void initOutputEdoal(String sourceEndpoint, String targetEndpoint, List<Float> ths, String outputEdoal) {
+    public void initOutputEdoal(String sourceEndpoint, String targetEndpoint, List<Float> ths, String outputEdoal) throws AlignmentException, URISyntaxException {
         outputs = new HashMap<>();
 
         for (float th : ths) {
@@ -27,7 +30,7 @@ public class OutputManager {
         }
     }
 
-    public void addToOutput(float th, SparqlSelect sq, List<SubgraphForOutput> subGraph) {
+    public void addToOutput(float th, SparqlSelect sq, List<SubgraphForOutput> subGraph) throws AlignmentException, URISyntaxException {
         for (Output o : outputs.get(th)) {
             o.addToOutput(subGraph, sq);
         }
@@ -35,7 +38,7 @@ public class OutputManager {
     }
 
 
-    public void endOutput() {
+    public void endOutput() throws AlignmentException, IOException {
         for (Float th : outputs.keySet()) {
             for (Output o : outputs.get(th)) {
                 o.end();

@@ -2,6 +2,7 @@ package irit.sparql;
 
 import irit.dataset.DatasetManager;
 import org.apache.jena.query.QueryExecution;
+import org.apache.jena.query.QuerySolution;
 import org.apache.jena.query.ResultSet;
 import org.apache.jena.rdf.model.RDFNode;
 
@@ -18,16 +19,18 @@ public class SparqlProxy {
 
         try (QueryExecution queryExecution = QueryExecution.create(query, DatasetManager.getInstance().get(dataset))) {
             ResultSet resultSet = queryExecution.execSelect();
-            resultSet.forEachRemaining(querySolution -> {
-                Map<String, RDFNode> stringMap = new HashMap<>();
-                for (String resultVar : resultSet.getResultVars()) {
-                    stringMap.put(resultVar, querySolution.get(resultVar));
-                }
-                result.add(stringMap);
-            });
+            resultSet.forEachRemaining(querySolution -> addResults(querySolution, resultSet, result));
         }
 
         return result;
+    }
+
+    private static void addResults(QuerySolution querySolution, ResultSet resultSet, List<Map<String, RDFNode>> result) {
+        Map<String, RDFNode> stringMap = new HashMap<>();
+        for (String resultVar : resultSet.getResultVars()) {
+            stringMap.put(resultVar, querySolution.get(resultVar));
+        }
+        result.add(stringMap);
     }
 
 
