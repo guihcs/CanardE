@@ -3,6 +3,7 @@ package irit.resource;
 import irit.complex.subgraphs.Triple;
 import irit.dataset.DatasetManager;
 import irit.similarity.EmbeddingManager;
+import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.*;
 import java.util.regex.Matcher;
@@ -67,6 +68,24 @@ public class IRI extends Resource {
     }
 
     public IRI findMostSimilarType(String endpointUrl, Collection<String> targetLabels, double threshold) {
+        if (getTypes().isEmpty()) {
+            retrieveTypes(endpointUrl);
+        }
+        double scoreTypeMax = -1;
+        IRI finalType = null;
+        for (IRI type : getTypes()) {
+            double scoreType;
+            type.retrieveLabels(endpointUrl);
+            scoreType = EmbeddingManager.similarity(type.getLabels(), targetLabels, threshold);
+            if (scoreTypeMax < scoreType) {
+                scoreTypeMax = scoreType;
+                finalType = type;
+            }
+        }
+        return finalType;
+    }
+
+    public IRI findMostSimilarType(String endpointUrl, INDArray targetLabels, double threshold) {
         if (getTypes().isEmpty()) {
             retrieveTypes(endpointUrl);
         }

@@ -27,6 +27,17 @@ public class EmbeddingManager {
         return EmbeddingManager.embs1.isEmpty() ? stringSimilarity(labels1, labels2, threshold) : embeddingSimilarity(labels1, labels2, threshold);
     }
 
+    public static double similarity(Set<String> labels1, INDArray labels2, double threshold) {
+        return embeddingSimilarity(labels1, labels2, threshold);
+    }
+
+    public static double similarity(INDArray emb1, INDArray emb2, double threshold) {
+        double sim = Transforms.cosineSim(emb1, emb2);
+        return sim < threshold ? 0 : sim;
+    }
+
+
+
     public static double embeddingSimilarity(Set<String> labels1, Collection<String> labels2, double threshold) {
         double score = 0;
 
@@ -43,6 +54,21 @@ public class EmbeddingManager {
                 sim = sim < threshold ? 0 : sim;
                 score += sim;
             }
+        }
+        return score;
+    }
+
+    public static double embeddingSimilarity(Set<String> labels1, INDArray labels2, double threshold) {
+        double score = 0;
+
+        Set<String> lab1 = labels1.stream().map(s -> s.replaceAll("\n+", " ")).collect(Collectors.toSet());
+
+        for (String l1 : lab1) {
+            INDArray emb1 = EmbeddingManager.get(l1);
+
+            double sim = Transforms.cosineSim(emb1, labels2);
+            sim = sim < threshold ? 0 : sim;
+            score += sim;
         }
         return score;
     }
@@ -185,5 +211,11 @@ public class EmbeddingManager {
         }
         return embs1.get(e1);
     }
+
+    public static INDArray embLabels(Collection<String> labels) {
+        List<INDArray> cqaLabelsEmbs = labels.stream().map(EmbeddingManager::get).toList();
+        return Nd4j.vstack(cqaLabelsEmbs).mean(0);
+    }
+
 
 }

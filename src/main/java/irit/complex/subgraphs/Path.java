@@ -4,6 +4,7 @@ import irit.dataset.DatasetManager;
 import irit.resource.IRI;
 import irit.resource.Resource;
 import irit.similarity.EmbeddingManager;
+import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.*;
 
@@ -99,8 +100,48 @@ public class Path extends InstantiatedSubgraph {
             similarity += 0.5;
         }
 
-        getSimilarity();
     }
+
+    public void compareLabel(INDArray targetLabels, double threshold, String targetEndpoint, double typeThreshold) {
+        similarity = 0;
+
+        List<String> propLabels = new ArrayList<>();
+
+        for (IRI prop : properties) {
+            prop.retrieveLabels(targetEndpoint);
+            propLabels.addAll(prop.getLabels());
+        }
+
+        INDArray propEmb = EmbeddingManager.embLabels(propLabels);
+
+        List<String> entLabels = new ArrayList<>();
+
+        for (int i = 0; i < entities.size(); i++) {
+            Resource ent = entities.get(i);
+            if (ent instanceof IRI) {
+                IRI type = types.get(i);
+                if (type != null) {
+                    entLabels.addAll(type.getLabels());
+                    INDArray typeEmb = EmbeddingManager.embLabels(type.getLabels());
+                    double scoreType = EmbeddingManager.similarity(typeEmb, targetLabels, threshold);
+                    if (scoreType <= typeThreshold) {
+                        types.set(i, null);
+                    }
+                }
+            }
+        }
+
+        INDArray entEmb = EmbeddingManager.embLabels(entLabels);
+
+        similarity = EmbeddingManager.similarity(propEmb.add(entEmb).div(2), targetLabels, threshold);
+
+        if (pathFound()) {
+            similarity += 0.5;
+        }
+
+    }
+
+
 
 
     public boolean pathFound() {
@@ -149,6 +190,17 @@ public class Path extends InstantiatedSubgraph {
     }
 
     public void getMostSimilarTypes(String endpointUrl, Set<String> targetLabels, double threshold) {
+        for (Resource r : entities) {
+            if (r instanceof IRI iri) {
+                IRI type = iri.findMostSimilarType(endpointUrl, targetLabels, threshold);
+                types.add(type);
+            } else {
+                types.add(null);
+            }
+        }
+    }
+
+    public void getMostSimilarTypes(String endpointUrl, INDArray targetLabels, double threshold) {
         for (Resource r : entities) {
             if (r instanceof IRI iri) {
                 IRI type = iri.findMostSimilarType(endpointUrl, targetLabels, threshold);

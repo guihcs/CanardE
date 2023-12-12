@@ -3,16 +3,16 @@ package irit.complex.answer;
 import irit.complex.subgraphs.InstantiatedSubgraph;
 import irit.complex.subgraphs.Triple;
 import irit.complex.subgraphs.TripleType;
+import irit.main.RunArgs;
 import irit.resource.IRI;
 import irit.resource.Resource;
+import irit.similarity.EmbeddingManager;
 import irit.sparql.SparqlProxy;
 import irit.sparql.query.select.SparqlSelect;
 import org.apache.jena.rdf.model.RDFNode;
+import org.nd4j.linalg.api.ndarray.INDArray;
 
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class SingleAnswer extends Answer {
     public final Resource res;
@@ -21,11 +21,8 @@ public class SingleAnswer extends Answer {
 
     public SingleAnswer(Resource r) {
         super();
-        if (r.isIRI()) {
-            res = new IRI("<" + r + ">");
-        } else {
-            res = r;
-        }
+        res = r.isIRI() ? new IRI("<" + r + ">") : r;
+
         numberMaxOfExploredAnswers = 20;
     }
 
@@ -47,13 +44,20 @@ public class SingleAnswer extends Answer {
         }
     }
 
-    public HashSet<InstantiatedSubgraph> findCorrespondingSubGraph(SparqlSelect query, String targetEndpoint, double similarityThreshold) {
+    public Set<InstantiatedSubgraph> findCorrespondingSubGraph(SparqlSelect query, RunArgs runArgs, double similarityThreshold) {
 
         Collection<String> queryLabels = query.getLabels();
 
+        INDArray cqaEmb = null;
+
+        if (runArgs.getSimType().equals("cqa_emb") || runArgs.getSimType().equals("sub_emb")) {
+            cqaEmb = EmbeddingManager.embLabels(queryLabels);
+        }
+
+
         double maxSim = -1;
         Triple bestTriple = new Triple();
-        HashSet<InstantiatedSubgraph> goodTriples = new HashSet<>();
+        Set<InstantiatedSubgraph> goodTriples = new HashSet<>();
 
         int count = 0;
 
@@ -62,14 +66,23 @@ public class SingleAnswer extends Answer {
 
                 count++;
                 double localMaxSim = -1;
-                retrieveAllTriples(iri, targetEndpoint);
+                retrieveAllTriples(iri, runArgs.getTargetName());
 
                 for (Triple t : iri.getTriples()) {
 
                     double similarity = 0;
-                    t.retrieveIRILabels(targetEndpoint);
-                    t.retrieveTypes(targetEndpoint);
-                    similarity += t.compareLabel(queryLabels, similarityThreshold, targetEndpoint);
+                    t.retrieveIRILabels(runArgs.getTargetName());
+                    t.retrieveTypes(runArgs.getTargetName());
+                    if (runArgs.getSimType().equals("cqa_emb")) {
+                        similarity += t.compareLabel(cqaEmb, similarityThreshold, runArgs.getTargetName());
+
+                    } else if (runArgs.getSimType().equals("sub_emb")) {
+                        similarity += t.compareLabelEmb(cqaEmb, similarityThreshold, runArgs.getTargetName());
+
+                    } else {
+                        similarity += t.compareLabel(queryLabels, similarityThreshold, runArgs.getTargetName());
+
+                    }
 
                     if (similarity > maxSim) {
                         maxSim = similarity;

@@ -2,11 +2,16 @@ package irit.complex.answer;
 
 import irit.complex.subgraphs.InstantiatedSubgraph;
 import irit.complex.subgraphs.Path;
+import irit.main.RunArgs;
 import irit.resource.IRI;
 import irit.resource.Resource;
+import irit.similarity.EmbeddingManager;
 import irit.sparql.query.select.SparqlSelect;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 public class PairAnswer extends Answer {
@@ -67,9 +72,107 @@ public class PairAnswer extends Answer {
     }
 
 
-    public HashSet<InstantiatedSubgraph> findCorresponding(Set<String> queryLabels, String targetEndpoint, double similarityThreshold, int currentLen, int maxLen) {
+    public Set<InstantiatedSubgraph> findCorresponding(Set<String> queryLabels, String targetEndpoint, double similarityThreshold, int currentLen, int maxLen) {
 
-        HashSet<InstantiatedSubgraph> paths = new HashSet<>();
+        Set<InstantiatedSubgraph> paths = new HashSet<>();
+
+        if (currentLen > maxLen) return paths;
+
+
+        if (hasR1Match() && hasR2Match()) {
+            for (Resource x : r1.getSimilarIRIs()) {
+                for (Resource y : r2.getSimilarIRIs()) {
+                    queryPaths(targetEndpoint, paths, queryLabels, x, y);
+
+                }
+            }
+        } else if (hasR1Match()) {
+            if (!r2.isIRI()) {
+                for (IRI x : r1.getSimilarIRIs()) {
+                    queryPaths(targetEndpoint, paths, queryLabels, x, r2);
+                }
+            }
+        } else if (hasR2Match()) {
+            if (!r1.isIRI()) {
+                for (IRI y : r2.getSimilarIRIs()) {
+                    queryPaths(targetEndpoint, paths, queryLabels, r1, y);
+                }
+            }
+        }
+
+
+        for (InstantiatedSubgraph p : paths) {
+            if (p instanceof Path pt) {
+
+                pt.compareLabel(queryLabels, similarityThreshold, targetEndpoint, 0.5);
+
+            } else {
+                System.err.println("problem in Pair answer: instantiated subgraph is not a path...");
+            }
+        }
+
+
+        if (paths.isEmpty() && !similarLooked) {
+            getSimilarIRIs(targetEndpoint);
+            System.out.println("No path found, similar answers : " + printMatchedEquivalents());
+            paths = findCorresponding(queryLabels, targetEndpoint, similarityThreshold, currentLen + 1, maxLen);
+        }
+
+        return paths;
+    }
+
+    public Set<InstantiatedSubgraph> findCorresponding(INDArray queryLabels, String targetEndpoint, double similarityThreshold, int currentLen, int maxLen) {
+
+        Set<InstantiatedSubgraph> paths = new HashSet<>();
+
+        if (currentLen > maxLen) return paths;
+
+
+        if (hasR1Match() && hasR2Match()) {
+            for (Resource x : r1.getSimilarIRIs()) {
+                for (Resource y : r2.getSimilarIRIs()) {
+                    queryPaths(targetEndpoint, paths, queryLabels, x, y);
+
+                }
+            }
+        } else if (hasR1Match()) {
+            if (!r2.isIRI()) {
+                for (IRI x : r1.getSimilarIRIs()) {
+                    queryPaths(targetEndpoint, paths, queryLabels, x, r2);
+                }
+            }
+        } else if (hasR2Match()) {
+            if (!r1.isIRI()) {
+                for (IRI y : r2.getSimilarIRIs()) {
+                    queryPaths(targetEndpoint, paths, queryLabels, r1, y);
+                }
+            }
+        }
+
+
+        for (InstantiatedSubgraph p : paths) {
+            if (p instanceof Path pt) {
+
+                pt.compareLabel(queryLabels, similarityThreshold, targetEndpoint, 0.5);
+
+            } else {
+                System.err.println("problem in Pair answer: instantiated subgraph is not a path...");
+            }
+        }
+
+
+        if (paths.isEmpty() && !similarLooked) {
+            getSimilarIRIs(targetEndpoint);
+            System.out.println("No path found, similar answers : " + printMatchedEquivalents());
+            paths = findCorresponding(queryLabels, targetEndpoint, similarityThreshold, currentLen + 1, maxLen);
+        }
+
+        return paths;
+    }
+
+    public Set<InstantiatedSubgraph> findCorrespondingEmb(INDArray queryLabels, String targetEndpoint, double similarityThreshold, int currentLen, int maxLen) {
+
+        Set<InstantiatedSubgraph> paths = new HashSet<>();
 
         if (currentLen > maxLen) return paths;
 
@@ -125,13 +228,36 @@ public class PairAnswer extends Answer {
         paths.add(p);
     }
 
-    public HashSet<InstantiatedSubgraph> findCorrespondingSubGraph(SparqlSelect query, String targetEndpoint, double similarityThreshold) {
+    public void queryPaths(String targetEndpoint, Set<InstantiatedSubgraph> paths, INDArray queryLabels, Resource x, Resource y) {
+
+        Path p = new Path(x, y, targetEndpoint, 5);
+        if (!p.pathFound()) return;
+
+        p.getMostSimilarTypes(targetEndpoint, queryLabels, 0.0);
+        paths.add(p);
+    }
+
+    public Set<InstantiatedSubgraph> findCorrespondingSubGraph(SparqlSelect query, RunArgs runArgs, double similarityThreshold) {
         final Set<String> queryLabels = query.getLabels();
-        return findCorresponding(queryLabels, targetEndpoint, similarityThreshold, 0, 5);
+        INDArray cqaEmb = null;
+
+        if (runArgs.getSimType().equals("cqa_emb")) {
+            List<INDArray> cqaLabelsEmbs = queryLabels.stream().map(EmbeddingManager::get).toList();
+            cqaEmb = Nd4j.vstack(cqaLabelsEmbs).mean(0);
+            return findCorresponding(cqaEmb, runArgs.getTargetName(), similarityThreshold, 0, 5);
+
+        } else if (runArgs.getSimType().equals("sub_emb")) {
+            List<INDArray> cqaLabelsEmbs = queryLabels.stream().map(EmbeddingManager::get).toList();
+            cqaEmb = Nd4j.vstack(cqaLabelsEmbs).mean(0);
+            return findCorrespondingEmb(cqaEmb, runArgs.getTargetName(), similarityThreshold, 0, 5);
+        } else {
+            return findCorresponding(queryLabels, runArgs.getTargetName(), similarityThreshold, 0, 5);
+
+        }
+
 
     }
 
-    // has at least one match (r1 or r2)
     public boolean hasMatch() {
         boolean match = !r1.isIRI() || hasR1Match();
         if (r2.isIRI() && !hasR2Match()) {

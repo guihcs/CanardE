@@ -27,6 +27,7 @@ public class RunArgs {
     private List<SparqlSelect> queries;
     private List<Float> thresholds;
     private int maxMatches;
+    private String simType;
 
 
     public static RunArgs fromNamespace(Namespace ns) throws IOException {
@@ -50,7 +51,7 @@ public class RunArgs {
 
         args.queries = SparqlSelect.load(args.cqa);
 
-
+        args.simType = ns.get("simType");
         return args;
     }
 
@@ -123,6 +124,10 @@ public class RunArgs {
         return false;
     }
 
+    public String getSimType() {
+        return simType;
+    }
+
 
     public static ArgumentParser buildArgumentParser() {
         ArgumentParser parser = ArgumentParsers.newFor("Canard").build()
@@ -169,6 +174,11 @@ public class RunArgs {
                 .type(String.class)
                 .nargs("+")
                 .help("Paths to embeddings files.");
+
+        parser.addArgument("--simType")
+                .type(String.class)
+                .choices("lev", "cqa_emb", "sub_emb")
+                .help("Similarity type.");
 
         return parser;
     }

@@ -168,7 +168,7 @@ public class ComplexAlignmentGeneration {
         answers.sort(Comparator.comparing(Answer::toString));
 
         for (Answer ans : answers) {
-            Set<InstantiatedSubgraph> localSubgraphs = ans.findCorrespondingSubGraph(sq, runArgs.getTargetName(), threshold);
+            Set<InstantiatedSubgraph> localSubgraphs = ans.findCorrespondingSubGraph(sq, runArgs, threshold);
             List<InstantiatedSubgraph> instantiatedSubgraphs = new ArrayList<>(localSubgraphs);
             instantiatedSubgraphs.sort(Comparator.comparing(InstantiatedSubgraph::toString));
             goodSubgraphs.addAll(instantiatedSubgraphs);

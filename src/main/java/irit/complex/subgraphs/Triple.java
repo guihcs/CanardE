@@ -3,9 +3,12 @@ package irit.complex.subgraphs;
 import irit.resource.IRI;
 import irit.resource.Resource;
 import irit.similarity.EmbeddingManager;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 public class Triple extends InstantiatedSubgraph {
@@ -85,11 +88,11 @@ public class Triple extends InstantiatedSubgraph {
         if (tripleType != TripleType.PREDICATE && !predicate.toString().equals("<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>")) {
             predicateSimilarity = EmbeddingManager.similarity(predicate.getLabels(), targetLabels, threshold);
         }
-        if (tripleType != TripleType.OBJECT && object instanceof IRI) {
-            objectType = ((IRI) object).findMostSimilarType(targetEndpoint, targetLabels, threshold);
+        if (tripleType != TripleType.OBJECT && object instanceof IRI oiri) {
+            objectType = oiri.findMostSimilarType(targetEndpoint, targetLabels, threshold);
             if (objectType != null) {
                 double scoreTypeObMax = EmbeddingManager.similarity(objectType.getLabels(), targetLabels, threshold);
-                objectSimilarity = EmbeddingManager.similarity(((IRI) object).getLabels(), targetLabels, threshold);
+                objectSimilarity = EmbeddingManager.similarity(oiri.getLabels(), targetLabels, threshold);
                 if (scoreTypeObMax > objectSimilarity) {
                     keepObjectType = true;
                     objectSimilarity = scoreTypeObMax;
@@ -105,6 +108,92 @@ public class Triple extends InstantiatedSubgraph {
 
         return subjectSimilarity + predicateSimilarity + objectSimilarity;
     }
+
+    public double compareLabel(INDArray targetLabels, double threshold, String targetEndpoint) {
+        if (tripleType != TripleType.SUBJECT) {
+            subjectType = subject.findMostSimilarType(targetEndpoint, targetLabels, threshold);
+            double scoreTypeSubMax = 0;
+            if (subjectType != null) {
+                scoreTypeSubMax = EmbeddingManager.similarity(subjectType.getLabels(), targetLabels, threshold);
+            }
+            subjectSimilarity = EmbeddingManager.similarity(subject.getLabels(), targetLabels, threshold);
+            if (scoreTypeSubMax > subjectSimilarity) {
+                keepSubjectType = true;
+                subjectSimilarity = scoreTypeSubMax;
+            }
+        }
+        if (tripleType != TripleType.PREDICATE && !predicate.toString().equals("<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>")) {
+            predicateSimilarity = EmbeddingManager.similarity(predicate.getLabels(), targetLabels, threshold);
+        }
+        if (tripleType != TripleType.OBJECT && object instanceof IRI oiri) {
+            objectType = oiri.findMostSimilarType(targetEndpoint, targetLabels, threshold);
+            if (objectType != null) {
+                double scoreTypeObMax = EmbeddingManager.similarity(objectType.getLabels(), targetLabels, threshold);
+                objectSimilarity = EmbeddingManager.similarity(oiri.getLabels(), targetLabels, threshold);
+                if (scoreTypeObMax > objectSimilarity) {
+                    keepObjectType = true;
+                    objectSimilarity = scoreTypeObMax;
+                }
+            }
+
+        } else if (tripleType != TripleType.OBJECT) {
+            Set<String> hashObj = new HashSet<>();
+            hashObj.add(object.toString());
+            objectSimilarity = EmbeddingManager.similarity(hashObj, targetLabels, threshold);
+        }
+
+
+        return subjectSimilarity + predicateSimilarity + objectSimilarity;
+    }
+
+    public double compareLabelEmb(INDArray targetLabels, double threshold, String targetEndpoint) {
+        INDArray subjectEmb = null;
+        INDArray predicateEmb = null;
+        INDArray objectEmb = null;
+        if (tripleType != TripleType.SUBJECT) {
+            Set<String> subjectLabels = subject.getLabels();
+
+            subjectType = subject.findMostSimilarType(targetEndpoint, targetLabels, threshold);
+            if (subjectType != null) {
+                subjectLabels.addAll(subjectType.getLabels());
+            }
+            subjectEmb = EmbeddingManager.embLabels(subjectLabels);
+        }
+        if (tripleType != TripleType.PREDICATE && !predicate.toString().equals("<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>")) {
+            predicateEmb = EmbeddingManager.embLabels(predicate.getLabels());
+        }
+        if (tripleType != TripleType.OBJECT && object instanceof IRI oiri) {
+            Set<String> objectLabels = oiri.getLabels();
+
+            objectType = oiri.findMostSimilarType(targetEndpoint, targetLabels, threshold);
+            if (objectType != null) {
+                objectLabels.addAll(objectType.getLabels());
+            }
+            objectEmb = EmbeddingManager.embLabels(objectLabels);
+        } else if (tripleType != TripleType.OBJECT) {
+            Set<String> hashObj = new HashSet<>();
+            hashObj.add(object.toString());
+            objectEmb = EmbeddingManager.embLabels(hashObj);
+        }
+
+
+        INDArray tripleEmb = Nd4j.zeros(EmbeddingManager.embshape);
+        if (subjectEmb != null) {
+            tripleEmb.addi(subjectEmb);
+        }
+        if (predicateEmb != null) {
+            tripleEmb.addi(predicateEmb);
+        }
+        if (objectEmb != null) {
+            tripleEmb.addi(objectEmb);
+        }
+
+        tripleEmb.divi(2);
+
+
+        return EmbeddingManager.similarity(tripleEmb, targetLabels, threshold);
+    }
+
 
     public IRI getSubject() {
         return subject;

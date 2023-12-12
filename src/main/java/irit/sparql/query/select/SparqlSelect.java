@@ -13,19 +13,20 @@ import java.util.regex.Pattern;
 
 public class SparqlSelect extends SparqlQuery {
     private final List<String> selectFocus;
-
-    public SparqlSelect(String query) {
-        super(query);
-        mainQuery = mainQuery.trim().replaceAll("SELECT", "select").replaceAll("WHERE", "where").replaceAll("\n", " ");
-        selectFocus = new ArrayList<>();
-        Pattern pattern = Pattern.compile("""
+    private static final Pattern pattern = Pattern.compile("""
                 select[ \t
                 distncDISTNC]+(\\?[A-Za-z\\d_-]+)[ \t
                 ]+(\\?*[A-Za-z\\d_-]*[ \t
                 ]*)where[ \t
                 ]*\\{(.+)}[ \t
                 ]*$""");
-        Matcher matcher = pattern.matcher(mainQuery);
+
+    public SparqlSelect(String query) {
+        super(query);
+        mainQuery = mainQuery.trim().replaceAll("SELECT", "select").replaceAll("WHERE", "where").replaceAll("\n", " ");
+        selectFocus = new ArrayList<>();
+
+        Matcher matcher = SparqlSelect.pattern.matcher(mainQuery);
         while (matcher.find()) {
             selectFocus.add(matcher.group(1).trim());
             if (!matcher.group(2).trim().isEmpty()) {
@@ -33,8 +34,6 @@ public class SparqlSelect extends SparqlQuery {
             }
             where = matcher.group(3).trim();
         }
-
-
 
     }
 

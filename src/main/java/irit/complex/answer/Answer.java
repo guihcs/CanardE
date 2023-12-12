@@ -1,6 +1,7 @@
 package irit.complex.answer;
 
 import irit.complex.subgraphs.InstantiatedSubgraph;
+import irit.main.RunArgs;
 import irit.sparql.query.select.SparqlSelect;
 
 import java.util.HashSet;
@@ -21,7 +22,7 @@ public abstract class Answer {
     public void retrieveIRILabels(String endpointURL) {
     }
 
-    public Set<InstantiatedSubgraph> findCorrespondingSubGraph(SparqlSelect query, String targetEndpoint, double similarityThreshold) {
+    public Set<InstantiatedSubgraph> findCorrespondingSubGraph(SparqlSelect query, RunArgs runArgs, double similarityThreshold) {
         return new HashSet<>();
     }
 
