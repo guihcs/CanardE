@@ -136,15 +136,10 @@ public class TripleSubgraph extends SubgraphForOutput {
         String res = "SELECT DISTINCT ?answer WHERE {";
         if (toIntensionString().contains("somePredicate")) {
             res += toSPARQLExtension();
-        }
-        // If common part is the predicate
-        else if (commonPart == TripleType.PREDICATE || commonPart == TripleType.NONE) {
-            // and if the predicate similarity is higher than the object/subject similarity --> Intension
+        } else if (commonPart == TripleType.PREDICATE || commonPart == TripleType.NONE) {
             if (predicateHasMaxSim()) {
                 res += intension;
-            }
-            // else --> extension
-            else {
+            } else {
                 res += toSPARQLExtension();
             }
 
@@ -193,6 +188,5 @@ public class TripleSubgraph extends SubgraphForOutput {
         s = s.replaceAll("\\$", "\\\\$");
         return s;
     }
-
 
 }

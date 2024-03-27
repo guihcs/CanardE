@@ -38,6 +38,12 @@ public class SingleAnswer extends Answer {
         }
     }
 
+    public void getSimilarIRIsEmb(String targetEndpoint, float embThreshold) {
+        if (res.getSimilarIRIs().isEmpty()) {
+            res.findSimilarResourceEmb(targetEndpoint, embThreshold);
+        }
+    }
+
     public void getExistingMatches(String sourceEndpoint, String targetEndpoint) {
         if (res instanceof IRI) {
             ((IRI) res).findExistingMatches(sourceEndpoint, targetEndpoint);
@@ -46,11 +52,17 @@ public class SingleAnswer extends Answer {
 
     public Set<InstantiatedSubgraph> findCorrespondingSubGraph(SparqlSelect query, RunArgs runArgs, double similarityThreshold) {
 
+        double biasThreshold = 0.6;
+
+        if (runArgs.getSimType().equals("sub_emb") || runArgs.getSimType().equals("i_sub_emb")) {
+            biasThreshold = 0.6;
+        }
+
         Collection<String> queryLabels = query.getLabels();
 
         INDArray cqaEmb = null;
 
-        if (runArgs.getSimType().equals("cqa_emb") || runArgs.getSimType().equals("sub_emb")) {
+        if (Set.of("cqa_emb", "sub_emb", "i_cqa_emb", "i_sub_emb").contains(runArgs.getSimType())) {
             cqaEmb = EmbeddingManager.embLabels(queryLabels);
         }
 
@@ -73,10 +85,10 @@ public class SingleAnswer extends Answer {
                     double similarity = 0;
                     t.retrieveIRILabels(runArgs.getTargetName());
                     t.retrieveTypes(runArgs.getTargetName());
-                    if (runArgs.getSimType().equals("cqa_emb")) {
+                    if (runArgs.getSimType().equals("cqa_emb") || runArgs.getSimType().equals("i_cqa_emb")) {
                         similarity += t.compareLabel(cqaEmb, similarityThreshold, runArgs.getTargetName());
 
-                    } else if (runArgs.getSimType().equals("sub_emb")) {
+                    } else if (runArgs.getSimType().equals("sub_emb") || runArgs.getSimType().equals("i_sub_emb")) {
                         similarity += t.compareLabelEmb(cqaEmb, similarityThreshold, runArgs.getTargetName());
 
                     } else {
@@ -93,7 +105,7 @@ public class SingleAnswer extends Answer {
                         localMaxSim = similarity;
                     }
 
-                    if (similarity >= 0.6) {
+                    if (similarity >= biasThreshold) {
                         goodTriples.add(t);
                     }
                 }

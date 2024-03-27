@@ -28,7 +28,9 @@ public class RunArgs {
     private List<Float> thresholds;
     private int maxMatches;
     private String simType;
+    private String linkType;
 
+    private float embThreshold;
 
     public static RunArgs fromNamespace(Namespace ns) throws IOException {
         RunArgs args = new RunArgs();
@@ -52,6 +54,8 @@ public class RunArgs {
         args.queries = SparqlSelect.load(args.cqa);
 
         args.simType = ns.get("simType");
+        args.linkType = ns.get("linkType");
+        args.embThreshold = ns.get("embThreshold");
         return args;
     }
 
@@ -81,53 +85,6 @@ public class RunArgs {
 
         return ranges;
     }
-
-
-    public String getOutputPath() {
-        return outputPath;
-    }
-
-    public String getSourceName() {
-        return sourceName;
-    }
-
-    public String getTargetName() {
-        return targetName;
-    }
-
-    public String getSourceEndpoint() {
-        return sourceEndpoint;
-    }
-
-    public String getTargetEndpoint() {
-        return targetEndpoint;
-    }
-
-    public List<String> getEmbeddings() {
-        return embeddings;
-    }
-
-    public List<SparqlSelect> getQueries() {
-        return queries;
-    }
-
-    public List<Float> getThresholds() {
-        return thresholds;
-    }
-
-    public int getMaxMatches() {
-        return maxMatches;
-    }
-
-    @SuppressWarnings("SameReturnValue")
-    public boolean isReassess() {
-        return false;
-    }
-
-    public String getSimType() {
-        return simType;
-    }
-
 
     public static ArgumentParser buildArgumentParser() {
         ArgumentParser parser = ArgumentParsers.newFor("Canard").build()
@@ -177,9 +134,74 @@ public class RunArgs {
 
         parser.addArgument("--simType")
                 .type(String.class)
-                .choices("lev", "cqa_emb", "sub_emb")
+                .setDefault("lev")
+                .choices("lev", "cqa_emb", "sub_emb", "i_lev", "i_cqa_emb", "i_sub_emb")
                 .help("Similarity type.");
 
+        parser.addArgument("--linkType")
+                .type(String.class)
+                .setDefault("regex")
+                .choices("regex", "emb", "bertint")
+                .help("Link type.");
+
+        parser.addArgument("--embThreshold")
+                .type(Float.class)
+                .setDefault(0.85f)
+                .help("Threshold for the embedding similarity in link step.");
+
         return parser;
+    }
+
+    public String getOutputPath() {
+        return outputPath;
+    }
+
+    public String getSourceName() {
+        return sourceName;
+    }
+
+    public String getTargetName() {
+        return targetName;
+    }
+
+    public String getSourceEndpoint() {
+        return sourceEndpoint;
+    }
+
+    public String getTargetEndpoint() {
+        return targetEndpoint;
+    }
+
+    public List<String> getEmbeddings() {
+        return embeddings;
+    }
+
+    public List<SparqlSelect> getQueries() {
+        return queries;
+    }
+
+    public List<Float> getThresholds() {
+        return thresholds;
+    }
+
+    public int getMaxMatches() {
+        return maxMatches;
+    }
+
+    @SuppressWarnings("SameReturnValue")
+    public boolean isReassess() {
+        return false;
+    }
+
+    public String getSimType() {
+        return simType;
+    }
+
+    public String getLinkType() {
+        return linkType;
+    }
+
+    public float getEmbThreshold() {
+        return embThreshold;
     }
 }

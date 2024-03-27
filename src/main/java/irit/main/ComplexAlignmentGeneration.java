@@ -31,6 +31,9 @@ public class ComplexAlignmentGeneration {
             Namespace res = parser.parseArgs(args);
             RunArgs runArgs = RunArgs.fromNamespace(res);
 
+            if (runArgs.getSimType().startsWith("i_")) {
+                EmbeddingManager.setIgnoreCase(true);
+            }
 
             if (runArgs.getEmbeddings() != null) {
                 EmbeddingManager.loadEmbeddings(runArgs.getEmbeddings());
@@ -40,7 +43,6 @@ public class ComplexAlignmentGeneration {
             DatasetManager.getInstance().load(runArgs.getTargetName(), runArgs.getTargetEndpoint());
 
             run(runArgs);
-
 
             DatasetManager.getInstance().close();
 
@@ -71,7 +73,7 @@ public class ComplexAlignmentGeneration {
 
 
     public static void align(SparqlSelect sq, RunArgs runArgs, OutputManager outputManager) throws Exception {
-        Set<Answer> matchedAnswers = getMatchedAnswers(sq, runArgs.getSourceName(), runArgs.getTargetName(), runArgs.getMaxMatches());
+        Set<Answer> matchedAnswers = getMatchedAnswers(runArgs.getLinkType(), sq, runArgs.getSourceName(), runArgs.getTargetName(), runArgs.getMaxMatches(), runArgs.getEmbThreshold());
 
         for (float threshold : runArgs.getThresholds()) {
             List<SubgraphForOutput> subgraphForOutputs = buildSingleOutput(matchedAnswers, sq, threshold, runArgs);
@@ -84,38 +86,45 @@ public class ComplexAlignmentGeneration {
     }
 
 
-    public static Set<Answer> getMatchedAnswers(SparqlSelect sq, String sourceEndpoint, String targetEndpoint, int maxMatches) throws Exception {
+    public static Set<Answer> getMatchedAnswers(String linkType, SparqlSelect sq, String sourceEndpoint, String targetEndpoint, int maxMatches, float embThreshold) throws Exception {
         Map<String, IRI> iriList = sq.getIRIList();
         for (Map.Entry<String, IRI> m : iriList.entrySet()) {
             m.getValue().retrieveLabels(sourceEndpoint);
         }
-
         List<Answer> answers = new ArrayList<>();
         Set<Answer> matchedAnswers = new HashSet<>();
 
         getAnswers(sq, sourceEndpoint, targetEndpoint, maxMatches, matchedAnswers, answers);
 
-
         answers.sort(Comparator.comparing(Answer::toString));
 
-
-        ensureAnswers(sourceEndpoint, targetEndpoint, maxMatches, matchedAnswers, answers);
+        ensureAnswers(linkType, sourceEndpoint, targetEndpoint, maxMatches, matchedAnswers, answers, embThreshold);
 
         return matchedAnswers;
     }
 
-    private static void ensureAnswers(String sourceEndpoint, String targetEndpoint, int maxMatches, Set<Answer> matchedAnswers, List<Answer> answers) throws Exception {
+    private static void ensureAnswers(String linkType, String sourceEndpoint, String targetEndpoint, int maxMatches, Set<Answer> matchedAnswers, List<Answer> answers, float embThreshold) throws Exception {
         if (matchedAnswers.isEmpty()) {
             Iterator<Answer> ansIt = answers.iterator();
             while (matchedAnswers.size() < maxMatches && ansIt.hasNext()) {
                 Answer ans = ansIt.next();
                 ans.retrieveIRILabels(sourceEndpoint);
-                ans.getSimilarIRIs(targetEndpoint);
+
+                if (linkType.equals("emb")) {
+                    ans.getSimilarIRIsEmb(targetEndpoint, embThreshold);
+                } else {
+                    ans.getSimilarIRIs(targetEndpoint);
+                }
+
                 if (ans.hasMatch()) {
                     matchedAnswers.add(ans);
                 }
+
             }
         }
+
+
+
     }
 
     private static void getAnswers(SparqlSelect sq, String sourceEndpoint, String targetEndpoint, int maxMatches, Set<Answer> matchedAnswers, List<Answer> answers) {
@@ -176,6 +185,7 @@ public class ComplexAlignmentGeneration {
 
         List<SubgraphForOutput> output = getSubgraphForOutputs(goodSubgraphs);
 
+
         if (runArgs.isReassess()) {
             for (SubgraphForOutput s : output) {
                 s.reassessSimilarityWithCounterExamples(runArgs.getSourceName(), runArgs.getTargetEndpoint(), sq);
@@ -186,14 +196,14 @@ public class ComplexAlignmentGeneration {
         Collections.sort(output);
         output.sort(Comparator.comparing(SubgraphForOutput::toString));
 
-
-        return getForOutputs(output);
+        double simBias = runArgs.getSimType().equals("sub_emb") || runArgs.getSimType().equals("i_sub_emb") ? 0.6 : 0.6;
+        return getForOutputs(output, simBias);
     }
 
-    private static List<SubgraphForOutput> getForOutputs(List<SubgraphForOutput> output) {
+    private static List<SubgraphForOutput> getForOutputs(List<SubgraphForOutput> output, double simBias) {
         List<SubgraphForOutput> singleOutput = new ArrayList<>();
 
-        if (!output.isEmpty() && output.getLast().getSimilarity() < 0.6 && output.getLast().getSimilarity() > 0.01) {
+        if (!output.isEmpty() && output.getLast().getSimilarity() < simBias && output.getLast().getSimilarity() > 0.01) {
             double sim = output.getLast().getSimilarity();
             boolean moreCorrespondences = true;
             int i = output.size() - 1;
@@ -207,7 +217,7 @@ public class ComplexAlignmentGeneration {
             }
         } else {
             for (SubgraphForOutput s : output) {
-                if (s.getSimilarity() >= 0.6) {
+                if (s.getSimilarity() >= simBias) {
                     singleOutput.add(s);
                 }
             }
@@ -256,6 +266,7 @@ public class ComplexAlignmentGeneration {
         return result;
     }
 
+
     private static List<Map<String, RDFNode>> loadUnary(String sourceEndpoint, SparqlSelect sq, List<Answer> answers, String queryLimit) {
         List<Map<String, RDFNode>> result = SparqlProxy.query(sourceEndpoint, sq.toUnchangedString() + queryLimit);
         for (Map<String, RDFNode> response : result) {
@@ -269,5 +280,8 @@ public class ComplexAlignmentGeneration {
         }
         return result;
     }
+
+
+
 }
 

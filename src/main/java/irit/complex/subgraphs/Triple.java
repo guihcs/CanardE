@@ -190,8 +190,8 @@ public class Triple extends InstantiatedSubgraph {
 
         tripleEmb.divi(2);
 
-
-        return EmbeddingManager.similarity(tripleEmb, targetLabels, threshold);
+        subjectSimilarity = EmbeddingManager.similarity(tripleEmb, targetLabels, threshold);
+        return subjectSimilarity;
     }
 
 

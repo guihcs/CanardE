@@ -16,6 +16,9 @@ public abstract class Answer {
     public void getSimilarIRIs(String targetEndpoint) throws Exception {
     }
 
+    public void getSimilarIRIsEmb(String targetEndpoint, float embThreshold) {
+    }
+
     public void getExistingMatches(String sourceEndpoint, String targetEndpoint) {
     }
 

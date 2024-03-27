@@ -162,6 +162,28 @@ public class IRI extends Resource {
     }
 
 
+    public void findSimilarResourceEmb(String targetEndpoint, float embThreshold) {
+        if (labels.isEmpty()) {
+            retrieveLabels(targetEndpoint);
+        }
+        for (String rawLab : labels) {
+
+            String label = rawLab.replaceAll("[+{}.?^]", "");
+
+            if (label.length() < 1705) {
+
+                Set<String> similar1 = DatasetManager.getInstance().labelMaps.get(targetEndpoint).getSimilarEmb(label, embThreshold);
+                for (String stringRDFNodeMap : similar1) {
+                    String s = stringRDFNodeMap.replaceAll("\"", "");
+                    similarIRIs.add(new IRI("<" + s + ">"));
+                }
+
+
+            }
+        }
+    }
+
+
     public Set<String> getLabels() {
         return labels;
     }

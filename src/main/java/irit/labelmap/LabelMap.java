@@ -1,10 +1,13 @@
 package irit.labelmap;
 
+import irit.similarity.EmbeddingManager;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.RDFNode;
 import org.apache.jena.rdf.model.Statement;
 import org.apache.jena.rdf.model.StmtIterator;
 import org.apache.jena.riot.RDFDataMgr;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -16,6 +19,9 @@ public class LabelMap {
     private final Map<String, Map<String, Set<String>>> pom = new HashMap<>();
     private final Map<String, Map<String, Set<String>>> som = new HashMap<>();
     private final Map<String, String> typeMap = new HashMap<>();
+
+    private List<String> collect;
+    private INDArray vstack, vNorm;
 
 
     public LabelMap(String path) {
@@ -97,6 +103,43 @@ public class LabelMap {
                 }
             }
         }
+
+        return result;
+    }
+
+    private boolean isBNode(String v) {
+
+        float digitCount = 0;
+
+        for (int i = 0; i < v.length(); i++) {
+            if (Character.isDigit(v.charAt(i))) digitCount++;
+        }
+
+        float digitProportion = digitCount / v.length();
+        return digitProportion > 0.30f;
+    }
+    public Set<String> getSimilarEmb(String v, float embThreshold) {
+        v = v.toLowerCase();
+        Set<String> result = new HashSet<>();
+
+
+        if(collect == null){
+            collect = spmi.keySet().stream().filter(s -> !isBNode(s)).collect(Collectors.toList());
+            vstack = Nd4j.vstack(collect.stream().map(EmbeddingManager::get).toList()).detach();
+            vNorm = vstack.norm2(1).detach();
+        }
+
+        Map.Entry<Integer, Float> integerFloatEntry = EmbeddingManager.maxArgSim(v, vstack, vNorm);
+
+        if (integerFloatEntry.getValue() > embThreshold) {
+            Map<String, Set<String>> stringSetMap = spmi.get(collect.get(integerFloatEntry.getKey()));
+            for (Set<String> value : stringSetMap.values()) {
+                result.addAll(value);
+            }
+        }
+
+
+        Nd4j.getMemoryManager().invokeGc();
 
         return result;
     }

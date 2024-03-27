@@ -8,7 +8,6 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.nio.file.Files;
-import java.util.Arrays;
 
 public class EmbeddingTest {
 
@@ -28,7 +27,7 @@ public class EmbeddingTest {
             de[j] = Double.parseDouble(split[j]);
         }
 
-        double[] doubles = EmbeddingManager.doublesFromLine(line);
+        double[] doubles = EmbeddingManager.floatsFromLine(line);
 
         Assertions.assertEquals(de.length, doubles.length);
 

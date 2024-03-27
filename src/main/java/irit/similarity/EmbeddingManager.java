@@ -5,7 +5,6 @@ import org.apache.commons.text.similarity.LevenshteinDistance;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.ops.transforms.Transforms;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -22,6 +21,7 @@ public class EmbeddingManager {
     private static final Pattern pattern = Pattern.compile("([^>]+)[#/]([A-Za-z0-9_-]+)");
     public static long[] embshape;
     private static final LevenshteinDistance levenshteinDistance = LevenshteinDistance.getDefaultInstance();
+    private static boolean ignoreCase = false;
 
     public static double similarity(Set<String> labels1, Collection<String> labels2, double threshold) {
         return EmbeddingManager.embs1.isEmpty() ? stringSimilarity(labels1, labels2, threshold) : embeddingSimilarity(labels1, labels2, threshold);
@@ -32,10 +32,48 @@ public class EmbeddingManager {
     }
 
     public static double similarity(INDArray emb1, INDArray emb2, double threshold) {
-        double sim = Transforms.cosineSim(emb1, emb2);
+        double sim = EmbeddingManager.cosineSim(emb1, emb2);
         return sim < threshold ? 0 : sim;
     }
 
+    public static double similarity(String s1, String s2) {
+        INDArray emb1 = EmbeddingManager.get(s1);
+        INDArray emb2 = EmbeddingManager.get(s2);
+        return EmbeddingManager.cosineSim(emb1, emb2);
+    }
+
+    public static Map.Entry<Integer, Float> maxArgSim(String s, INDArray vstack, INDArray vNorm){
+
+        INDArray emb1 = EmbeddingManager.get(s);
+        INDArray norm1 = emb1.norm2();
+
+
+        INDArray dot = emb1.mul(vstack).sum(1);
+        INDArray norm = norm1.mul(vNorm);
+
+        for (int i = 0; i < norm.length(); i++) {
+            if (norm.getDouble(i) == 0) {
+                norm.putScalar(i, 1);
+            }
+        }
+
+        INDArray sim = dot.div(norm);
+
+        INDArray argMax = sim.argMax();
+
+        int anInt = argMax.getInt(0);
+        float aFloat = sim.getFloat(anInt);
+
+        return Map.entry(anInt, aFloat);
+
+    }
+
+    public static double cosineSim(INDArray emb1, INDArray emb2) {
+        INDArray dot = emb1.mul(emb2).sum();
+        double norm = emb1.norm2Number().doubleValue() * emb2.norm2Number().doubleValue();
+        if (norm == 0) return 0;
+        return dot.getDouble(0) / norm;
+    }
 
 
     public static double embeddingSimilarity(Set<String> labels1, Collection<String> labels2, double threshold) {
@@ -50,7 +88,7 @@ public class EmbeddingManager {
                 INDArray emb1 = EmbeddingManager.get(l1);
                 INDArray emb2 = EmbeddingManager.get(l2);
 
-                double sim = Transforms.cosineSim(emb1, emb2);
+                double sim = EmbeddingManager.cosineSim(emb1, emb2);
                 sim = sim < threshold ? 0 : sim;
                 score += sim;
             }
@@ -66,7 +104,7 @@ public class EmbeddingManager {
         for (String l1 : lab1) {
             INDArray emb1 = EmbeddingManager.get(l1);
 
-            double sim = Transforms.cosineSim(emb1, labels2);
+            double sim = EmbeddingManager.cosineSim(emb1, labels2);
             sim = sim < threshold ? 0 : sim;
             score += sim;
         }
@@ -118,42 +156,45 @@ public class EmbeddingManager {
 
         for (String key : keys) {
 
-            INDArray indArray = Nd4j.create(doublesFromLine(scanner.nextLine()));
+            INDArray indArray = Nd4j.create(floatsFromLine(scanner.nextLine()));
             if (embshape == null) EmbeddingManager.embshape = indArray.shape();
+
+            if (EmbeddingManager.isIgnoreCase()) key = key.toLowerCase().strip();
+
             EmbeddingManager.embs1.put(key, indArray);
         }
     }
 
 
-    public static double[] doublesFromLine(String line) {
-        double[] doubles = new double[100];
+    public static float[] floatsFromLine(String line) {
+        float[] doubles = new float[100];
         int size = 0;
 
-        double pref = 1.0;
-        double value = 0.0;
+        float pref = 1.0f;
+        float value = 0.0f;
         boolean dot = false;
-        double currentExp = 0.1;
+        float currentExp = 0.1f;
         boolean readExp = false;
-        double epref = 1.0;
-        double exp = 0.0;
+        float epref = 1.0f;
+        float exp = 0.0f;
 
         for (char c : line.toCharArray()) {
             if (c == '-') {
                 if (readExp) {
-                    epref = -1.0;
+                    epref = -1.0f;
                 } else {
-                    pref = -1.0;
+                    pref = -1.0f;
                 }
             } else if (Character.isDigit(c)) {
                 if (!dot) {
-                    value = value * 10 + Character.getNumericValue(c);
+                    value = value * 10f + Character.getNumericValue(c);
                 } else {
                     value = value + Character.getNumericValue(c) * currentExp;
-                    currentExp *= 0.1;
+                    currentExp *= 0.1f;
                 }
 
                 if (readExp) {
-                    exp = exp * 10 + Character.getNumericValue(c);
+                    exp = exp * 10f + Character.getNumericValue(c);
                 }
             } else if (c == '.') {
                 dot = true;
@@ -161,7 +202,7 @@ public class EmbeddingManager {
                 value = value * pref;
 
                 if (readExp) {
-                    value = value * Math.pow(10, exp * epref);
+                    value = (float) (value * Math.pow(10, exp * epref));
                 }
 
 
@@ -171,13 +212,13 @@ public class EmbeddingManager {
 
                 doubles[size] = value;
                 size++;
-                pref = 1.0;
-                value = 0.0;
+                pref = 1.0f;
+                value = 0.0f;
                 dot = false;
-                currentExp = 0.1;
+                currentExp = 0.1f;
                 readExp = false;
-                epref = 1.0;
-                exp = 0.0;
+                epref = 1.0f;
+                exp = 0.0f;
             } else if (c == 'e') {
                 readExp = true;
             } else {
@@ -206,8 +247,12 @@ public class EmbeddingManager {
 
 
     public static INDArray get(String e1) {
+        if (!embs1.containsKey(e1) && EmbeddingManager.isIgnoreCase()) {
+            e1 = e1.toLowerCase().strip();
+        }
+
         if (!embs1.containsKey(e1)) {
-            return Nd4j.zeros(DataType.DOUBLE, embshape);
+            return Nd4j.zeros(DataType.FLOAT, embshape);
         }
         return embs1.get(e1);
     }
@@ -218,4 +263,11 @@ public class EmbeddingManager {
     }
 
 
+    public static boolean isIgnoreCase() {
+        return ignoreCase;
+    }
+
+    public static void setIgnoreCase(boolean ignoreCase) {
+        EmbeddingManager.ignoreCase = ignoreCase;
+    }
 }

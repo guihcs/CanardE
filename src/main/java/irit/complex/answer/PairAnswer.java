@@ -60,6 +60,22 @@ public class PairAnswer extends Answer {
         }
     }
 
+    public void getSimilarIRIsEmb(String targetEndpoint, float embThreshold) {
+        if (!similarLooked) {
+
+            if (r1 instanceof IRI iri) {
+                iri.findSimilarResourceEmb(targetEndpoint, embThreshold);
+
+            }
+            if (r2 instanceof IRI iri) {
+                iri.findSimilarResourceEmb(targetEndpoint, embThreshold);
+
+            }
+
+            similarLooked = true;
+        }
+    }
+
     public void getExistingMatches(String sourceEndpoint, String targetEndpoint) {
 
         if (r1 instanceof IRI iri) {

@@ -1,13 +1,11 @@
 package irit.resource;
 
 import irit.complex.answer.QueryTemplate;
+import irit.dataset.DatasetManager;
 import irit.sparql.SparqlProxy;
 import org.apache.jena.rdf.model.RDFNode;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -59,6 +57,10 @@ public class Resource {
         substitution.put("labelValue", "\"" + value.substring(0, 1).toUpperCase() + value.substring(1) + "\"");
         querySimilarIri(substitution, targetEndpoint);
 
+    }
+
+    public void findSimilarResourceEmb(String targetEndpoint, float embThreshold) {
+        System.out.println("Emb");
     }
 
     private void querySimilarIri(Map<String, String> substitution, String targetEndpoint) throws Exception {
