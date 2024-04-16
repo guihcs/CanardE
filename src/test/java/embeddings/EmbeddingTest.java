@@ -24,15 +24,19 @@ public class EmbeddingTest {
 
         double[] de = new double[split.length];
         for (int j = 0; j < split.length; j++) {
-            de[j] = Double.parseDouble(split[j]);
+            if(split[j].equals("nan")){
+                de[j] = 0;
+                continue;
+            }
+            de[j] = Float.parseFloat(split[j]);
         }
 
-        double[] doubles = EmbeddingManager.floatsFromLine(line);
+        float[] doubles = EmbeddingManager.floatsFromLine(line);
 
         Assertions.assertEquals(de.length, doubles.length);
 
         for (int i = 0; i < de.length; i++) {
-            Assertions.assertEquals(de[i], doubles[i], 1e-12);
+            Assertions.assertEquals(de[i], doubles[i], 1e-7);
         }
 
     }

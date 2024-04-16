@@ -178,6 +178,8 @@ public class EmbeddingManager {
         float epref = 1.0f;
         float exp = 0.0f;
 
+        boolean readingNan = false;
+
         for (char c : line.toCharArray()) {
             if (c == '-') {
                 if (readExp) {
@@ -210,6 +212,10 @@ public class EmbeddingManager {
                     doubles = Arrays.copyOf(doubles, size * 2);
                 }
 
+                if (readingNan) {
+                    value = 0;
+                }
+
                 doubles[size] = value;
                 size++;
                 pref = 1.0f;
@@ -219,8 +225,12 @@ public class EmbeddingManager {
                 readExp = false;
                 epref = 1.0f;
                 exp = 0.0f;
+                readingNan = false;
             } else if (c == 'e') {
                 readExp = true;
+
+            } else if (c == 'n' || c == 'a') {
+                readingNan = true;
             } else {
                 throw new RuntimeException("Unknown char " + c);
             }
