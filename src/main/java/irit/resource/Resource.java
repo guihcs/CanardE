@@ -48,7 +48,6 @@ public class Resource {
         } else {
             substitution.put("LabelValue", "\"" + value.toUpperCase() + "\"");
         }
-
         querySimilarIri(substitution, targetEndpoint);
 
         substitution.put("labelValue", "\"" + value.substring(0, 1).toUpperCase() + value.substring(1) + "\"@en");
@@ -59,7 +58,7 @@ public class Resource {
 
     }
 
-    public void findSimilarResourceEmb(String targetEndpoint, float embThreshold) {
+    public void findSimilarResourceEmb(String targetEndpoint, double embThreshold) {
         System.out.println("Emb");
     }
 

@@ -1,6 +1,7 @@
 package irit.complex.subgraphs;
 
 import irit.dataset.DatasetManager;
+import irit.labelmap.PathResult;
 import irit.resource.IRI;
 import irit.resource.Resource;
 import irit.similarity.EmbeddingManager;
@@ -11,7 +12,7 @@ import java.util.*;
 public class Path extends InstantiatedSubgraph {
     final ArrayList<Resource> entities;
     final ArrayList<IRI> types;
-    final List<Boolean> inverse;
+    List<Boolean> inverse;
     List<IRI> properties;
     double similarity;
     double typeSimilarity;
@@ -23,29 +24,42 @@ public class Path extends InstantiatedSubgraph {
         types = new ArrayList<>();
         similarity = 0;
         inverse = new ArrayList<>();
-        findPathMaxLength(x, y, sparqlEndpoint, maxLength);
+        findPathMaxLength(x, y, sparqlEndpoint, maxLength, false);
     }
 
-    private void findPathMaxLength(Resource x, Resource y, String sparqlEndpoint, int length) {
+    public Path(Resource x, Resource y, String sparqlEndpoint, int maxLength, boolean biDirectional) {
+        properties = new ArrayList<>();
+        entities = new ArrayList<>();
+        types = new ArrayList<>();
+        similarity = 0;
+        inverse = new ArrayList<>();
+        findPathMaxLength(x, y, sparqlEndpoint, maxLength, biDirectional);
+    }
 
+    private void findPathMaxLength(Resource x, Resource y, String sparqlEndpoint, int length, boolean biDirectional) {
 
         String value1 = x.getValue();
-        value1 = value1.substring(1, value1.length() - 1);
+        if (value1.startsWith("<") && value1.endsWith(">"))
+            value1 = value1.substring(1, value1.length() - 1);
 
         String value2 = y.getValue();
-        value2 = value2.substring(1, value2.length() - 1);
 
-        var result = DatasetManager.getInstance().labelMaps.get(sparqlEndpoint).pathBetween(value1, value2, length);
-        if (result.isEmpty()) {
+        if (value2.startsWith("<") && value2.endsWith(">"))
+            value2 = value2.substring(1, value2.length() - 1);
+
+
+        PathResult result = DatasetManager.getInstance().labelMaps.get(sparqlEndpoint).pathBetween(value1, value2, length, biDirectional);
+        if (result.getMap().isEmpty()) {
             return;
         }
-
-        Map<String, String> next = result.getFirst();
-        entities.add(next.containsKey("x") ? new Resource(next.get("x")) : x);
+        Map<String, String> next = result.getMap().getFirst();
 
         boolean stop = false;
 
         for (int i = 1; i < next.size() - 1 && !stop; i++) {
+            if (!next.containsKey("p" + i)) {
+                break;
+            }
             String p = next.get("p" + i);
             Resource res = new Resource(p);
             switch (p) {
@@ -64,14 +78,22 @@ public class Path extends InstantiatedSubgraph {
         if (stop) {
             properties = new ArrayList<>();
         } else if (length >= 2) {
-            for (int j = 1; j < 3; j++) {
-                String v = next.get("v" + j);
+
+            for (int i = 1; i < next.size() + 1; i++) {
+                if (!next.containsKey("v" + i)) {
+                    break;
+                }
+                String v = next.get("v" + i);
                 Resource res = new Resource(v);
                 entities.add(res.isIRI() ? new IRI("<" + v + ">") : res);
             }
+
+
         }
 
-        entities.add(next.containsKey("y") ? new Resource(next.get("y")) : y);
+
+
+        inverse = result.getInverseList();
     }
 
 
@@ -102,7 +124,35 @@ public class Path extends InstantiatedSubgraph {
 
     }
 
+
     public void compareLabel(INDArray targetLabels, double threshold, String targetEndpoint, double typeThreshold) {
+        similarity = 0;
+        for (IRI prop : properties) {
+            prop.retrieveLabels(targetEndpoint);
+            similarity += EmbeddingManager.similarity(prop.getLabels(), targetLabels, threshold);
+        }
+
+        for (int i = 0; i < entities.size(); i++) {
+            Resource ent = entities.get(i);
+            if (ent instanceof IRI) {
+                IRI type = types.get(i);
+                if (type != null) {
+                    double scoreType = EmbeddingManager.similarity(type.getLabels(), targetLabels, threshold);
+                    if (scoreType > typeThreshold) {
+                        typeSimilarity += scoreType;
+                    } else {
+                        types.set(i, null);
+                    }
+                }
+            }
+        }
+        if (pathFound()) {
+            similarity += 0.5;
+        }
+
+    }
+
+    public void compareLabelEmb(INDArray targetLabels, double threshold, String targetEndpoint, double typeThreshold) {
         similarity = 0;
 
         List<String> propLabels = new ArrayList<>();
@@ -148,11 +198,13 @@ public class Path extends InstantiatedSubgraph {
         return !properties.isEmpty();
     }
 
-    //version all entities
     public String toString() {
         StringBuilder ret = new StringBuilder();
         for (int i = 0; i < properties.size(); i++) {
-            ret.append(entities.get(i)).append(" ").append(properties.get(i)).append(" ").append(entities.get(i + 1)).append(".  ");
+            ret.append(entities.get(i)).append(" ").append(properties.get(i)).append(" ");
+            if (i + 1 < entities.size()) {
+                ret.append(entities.get(i + 1)).append(".  ");
+            }
         }
         return getSimilarity() + " <-> " + ret;
     }

@@ -73,10 +73,15 @@ public class ComplexAlignmentGeneration {
 
 
     public static void align(SparqlSelect sq, RunArgs runArgs, OutputManager outputManager) throws Exception {
+        System.out.println(sq);
+        System.out.println("---------------------------------------------------------");
+
         Set<Answer> matchedAnswers = getMatchedAnswers(runArgs.getLinkType(), sq, runArgs.getSourceName(), runArgs.getTargetName(), runArgs.getMaxMatches(), runArgs.getEmbThreshold());
 
-        for (float threshold : runArgs.getThresholds()) {
+
+        for (double threshold : runArgs.getThresholds()) {
             List<SubgraphForOutput> subgraphForOutputs = buildSingleOutput(matchedAnswers, sq, threshold, runArgs);
+
             if (!subgraphForOutputs.isEmpty()) {
                 outputManager.addToOutput(threshold, sq, subgraphForOutputs);
             }
@@ -86,24 +91,32 @@ public class ComplexAlignmentGeneration {
     }
 
 
-    public static Set<Answer> getMatchedAnswers(String linkType, SparqlSelect sq, String sourceEndpoint, String targetEndpoint, int maxMatches, float embThreshold) throws Exception {
+    public static Set<Answer> getMatchedAnswers(String linkType, SparqlSelect sq, String sourceEndpoint, String targetEndpoint, int maxMatches, double embThreshold) throws Exception {
         Map<String, IRI> iriList = sq.getIRIList();
         for (Map.Entry<String, IRI> m : iriList.entrySet()) {
             m.getValue().retrieveLabels(sourceEndpoint);
         }
+
         List<Answer> answers = new ArrayList<>();
         Set<Answer> matchedAnswers = new HashSet<>();
 
         getAnswers(sq, sourceEndpoint, targetEndpoint, maxMatches, matchedAnswers, answers);
 
+
+
+
         answers.sort(Comparator.comparing(Answer::toString));
 
+
         ensureAnswers(linkType, sourceEndpoint, targetEndpoint, maxMatches, matchedAnswers, answers, embThreshold);
+
+
+        System.out.println("Number of answers: " + answers.size());
 
         return matchedAnswers;
     }
 
-    private static void ensureAnswers(String linkType, String sourceEndpoint, String targetEndpoint, int maxMatches, Set<Answer> matchedAnswers, List<Answer> answers, float embThreshold) throws Exception {
+    private static void ensureAnswers(String linkType, String sourceEndpoint, String targetEndpoint, int maxMatches, Set<Answer> matchedAnswers, List<Answer> answers, double embThreshold) throws Exception {
         if (matchedAnswers.isEmpty()) {
             Iterator<Answer> ansIt = answers.iterator();
             while (matchedAnswers.size() < maxMatches && ansIt.hasNext()) {
@@ -160,32 +173,40 @@ public class ComplexAlignmentGeneration {
 
             while (matchedAnswers.size() < maxMatches && offsetMatch < answers.size()) {
                 Answer ans = answers.get(offsetMatch);
+
                 ans.getExistingMatches(sourceEndpoint, targetEndpoint);
+
                 if (ans.hasMatch()) {
                     matchedAnswers.add(ans);
                 }
                 offsetMatch++;
             }
         }
+
     }
 
 
-    private static List<SubgraphForOutput> buildSingleOutput(Set<Answer> matchedAnswers, SparqlSelect sq, float threshold, RunArgs runArgs) {
+    private static List<SubgraphForOutput> buildSingleOutput(Set<Answer> matchedAnswers, SparqlSelect sq, double threshold, RunArgs runArgs) {
         List<InstantiatedSubgraph> goodSubgraphs = new ArrayList<>();
 
         List<Answer> answers = new ArrayList<>(matchedAnswers);
         answers.sort(Comparator.comparing(Answer::toString));
 
+
         for (Answer ans : answers) {
-            Set<InstantiatedSubgraph> localSubgraphs = ans.findCorrespondingSubGraph(sq, runArgs, threshold);
+            Set<InstantiatedSubgraph> localSubgraphs = ans.findCorrespondingSubGraph(sq, runArgs, threshold, runArgs.isBidirectional());
             List<InstantiatedSubgraph> instantiatedSubgraphs = new ArrayList<>(localSubgraphs);
             instantiatedSubgraphs.sort(Comparator.comparing(InstantiatedSubgraph::toString));
             goodSubgraphs.addAll(instantiatedSubgraphs);
         }
 
+
+
         List<SubgraphForOutput> output = getSubgraphForOutputs(goodSubgraphs);
-
-
+        for (SubgraphForOutput subgraphForOutput : output) {
+            System.out.println(subgraphForOutput);
+        }
+        System.out.println("Number: " + output.size());
         if (runArgs.isReassess()) {
             for (SubgraphForOutput s : output) {
                 s.reassessSimilarityWithCounterExamples(runArgs.getSourceName(), runArgs.getTargetEndpoint(), sq);
@@ -195,7 +216,6 @@ public class ComplexAlignmentGeneration {
 
         Collections.sort(output);
         output.sort(Comparator.comparing(SubgraphForOutput::toString));
-
         double simBias = runArgs.getSimType().equals("sub_emb") || runArgs.getSimType().equals("i_sub_emb") ? 0.6 : 0.6;
         return getForOutputs(output, simBias);
     }

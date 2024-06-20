@@ -97,18 +97,7 @@ public class EDOALOutput extends Output {
                     score = 1.0;
                 }
                 if (s instanceof TripleSubgraph) {
-                    if (s.toIntensionString().contains("somePredicate")) {
-                        targetExpr = subgraphFormToEDOALEntity(s.toExtensionString(), sq.getSelectFocus());
-                    } else if (s.toIntensionString().contains("someObject") || s.toIntensionString().contains("someSubject")) {
-                        if (((TripleSubgraph) s).predicateHasMaxSim()) {
-                            targetExpr = subgraphFormToEDOALEntity(s.toIntensionString(), sq.getSelectFocus());
-                        } else {
-                            targetExpr = subgraphFormToEDOALEntity(s.toExtensionString(), sq.getSelectFocus());
-                        }
-
-                    } else {
-                        targetExpr = subgraphFormToEDOALEntity(s.toExtensionString(), sq.getSelectFocus());
-                    }
+                    targetExpr = buildTripleSubgraphExpression(sq, s);
                 } else if (s instanceof PathSubgraph) {
                     targetExpr = subgraphFormToEDOALProperty(s);
                 }
@@ -120,6 +109,23 @@ public class EDOALOutput extends Output {
             }
         }
 
+    }
+
+    private Expression buildTripleSubgraphExpression(SparqlSelect sq, SubgraphForOutput s) throws URISyntaxException {
+        Expression targetExpr;
+        if (s.toIntensionString().contains("somePredicate")) {
+            targetExpr = subgraphFormToEDOALEntity(s.toExtensionString(), sq.getSelectFocus());
+        } else if (s.toIntensionString().contains("someObject") || s.toIntensionString().contains("someSubject")) {
+            if (((TripleSubgraph) s).predicateHasMaxSim()) {
+                targetExpr = subgraphFormToEDOALEntity(s.toIntensionString(), sq.getSelectFocus());
+            } else {
+                targetExpr = subgraphFormToEDOALEntity(s.toExtensionString(), sq.getSelectFocus());
+            }
+
+        } else {
+            targetExpr = subgraphFormToEDOALEntity(s.toExtensionString(), sq.getSelectFocus());
+        }
+        return targetExpr;
     }
 
     public void end() throws IOException, AlignmentException {
@@ -614,8 +620,8 @@ public class EDOALOutput extends Output {
         List<String> properties = new ArrayList<>();
         List<Boolean> inverse = new ArrayList<>();
         List<ClassExpression> types = new ArrayList<>();
-        if (s instanceof PathSubgraph) {
-            Path p = ((PathSubgraph) s).getMainPath();
+        if (s instanceof PathSubgraph ps) {
+            Path p = ps.getMainPath();
             inverse = p.getInverse();
 
             for (int i = 0; i < p.getProperties().size(); i++) {
@@ -633,6 +639,7 @@ public class EDOALOutput extends Output {
                 types.add(null);
             }
         }
+
         return subgraphFormToEDOALProperty(properties, inverse, types);
     }
 

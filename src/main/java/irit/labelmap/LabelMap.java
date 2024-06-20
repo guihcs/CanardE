@@ -30,37 +30,40 @@ public class LabelMap {
 
     public void load(String path) {
         Model defaultModel = RDFDataMgr.loadModel(path);
-
-
         StmtIterator stmtIterator = defaultModel.listStatements();
 
         while (stmtIterator.hasNext()) {
             Statement statement = stmtIterator.nextStatement();
             String s = statement.getSubject().toString();
             String p = statement.getPredicate().toString();
-            String o = statement.getObject().toString();
+            String o;
+
+            if (statement.getObject().isLiteral()){
+                o = statement.getObject().asLiteral().getLexicalForm();
+            } else {
+                o = statement.getObject().toString();
+            }
 
             typeMap.put(s, getType(statement.getSubject()));
             typeMap.put(p, getType(statement.getPredicate()));
             typeMap.put(o, getType(statement.getObject()));
 
 
-            String si = s.toLowerCase();
-            String pi = p.toLowerCase();
-            String oi = o.toLowerCase();
-
-
             method1(s, p, o);
 
 
-            method2(s, p, o, si, pi, oi);
+            method2(s, p, o);
 
         }
 
 
     }
 
-    private void method2(String s, String p, String o, String si, String pi, String oi) {
+    private void method2(String s, String p, String o) {
+        String si = s.toLowerCase();
+        String pi = p.toLowerCase();
+        String oi = o.toLowerCase();
+
         method3(s, p, o, si, pi, oi, spmi, som, spm);
     }
 
@@ -118,12 +121,13 @@ public class LabelMap {
         float digitProportion = digitCount / v.length();
         return digitProportion > 0.30f;
     }
-    public Set<String> getSimilarEmb(String v, float embThreshold) {
+
+    public Set<String> getSimilarEmb(String v, double embThreshold) {
         v = v.toLowerCase();
         Set<String> result = new HashSet<>();
 
 
-        if(collect == null){
+        if (collect == null) {
             collect = spmi.keySet().stream().filter(s -> !isBNode(s)).collect(Collectors.toList());
             vstack = Nd4j.vstack(collect.stream().map(EmbeddingManager::get).toList()).detach();
             vNorm = vstack.norm2(1).detach();
@@ -156,14 +160,19 @@ public class LabelMap {
     }
 
     private void method4(String v, Set<String> result, Map<String, Map<String, Set<String>>> pom) {
+
+        if (v.startsWith("<") && v.endsWith(">")) v = v.substring(1, v.length() - 1);
+
         result.addAll(pom.getOrDefault(v, Map.of()).getOrDefault("http://www.w3.org/2000/01/rdf-schema#seeAlso", Set.of()));
         result.addAll(pom.getOrDefault(v, Map.of()).getOrDefault("http://www.w3.org/2002/07/owl#sameAs", Set.of()));
         result.addAll(pom.getOrDefault(v, Map.of()).getOrDefault("http://www.w3.org/2004/02/skos/core#closeMatch", Set.of()));
-        result.addAll(pom.getOrDefault(v, Map.of()).getOrDefault("http://www.w3.org/2004/02/skos/core#exactMacth", Set.of()));
+        result.addAll(pom.getOrDefault(v, Map.of()).getOrDefault("http://www.w3.org/2004/02/skos/core#exactMatch", Set.of()));
     }
 
 
     public boolean exists(String v) {
+        if (v.startsWith("<") && v.endsWith(">")) v = v.substring(1, v.length() - 1);
+
         Set<String> excludedProperties = Set.of(
                 "http://www.w3.org/2002/07/owl#sameAs",
                 "http://www.w3.org/2004/02/skos/core#closeMatch",
@@ -209,9 +218,6 @@ public class LabelMap {
 
 
     public Set<String> types(String value) {
-//        SELECT DISTINCT ?type WHERE {" +
-//            value + " a ?type."
-//                    + "filter(isIRI(?type))}
 
         Set<String> orDefault = pom.getOrDefault(value, Map.of()).getOrDefault("http://www.w3.org/1999/02/22-rdf-syntax-ns#type", Set.of());
 
@@ -219,34 +225,46 @@ public class LabelMap {
     }
 
 
-    public List<Map<String, String>> pathBetween(String v1, String v2, int maxDepth) {
-        if (v1.equals(v2)) return List.of();
+    public PathResult pathBetween(String v1, String v2, int maxDepth, boolean bidirectional) {
+        if (v1.equals(v2)) return new PathResult();
+
         Set<String> visited = new HashSet<>();
         Queue<Tree<String>> queue = new LinkedList<>();
         queue.add(new Tree<>(v1, null, 0));
+
         while (!queue.isEmpty()) {
             Tree<String> node = queue.poll();
-            if (visited.contains(node.getValue())) continue;
-            visited.add(node.getValue());
+
             if (node.getValue().equals(v2)) {
+
                 List<String> result = new ArrayList<>();
+                List<Integer> directions = new ArrayList<>();
                 while (node != null) {
+                    directions.add(node.getDirection());
                     result.add(node.getValue());
                     node = node.getParent();
+
                 }
 
                 Map<String, String> map = new HashMap<>();
-                map.put("v1", result.removeLast());
-                map.put("v2", result.removeFirst());
-
-                for (int i = 0, j = 1; i < result.size(); i++) {
-                    if (i % 2 == 1) continue;
-                    map.put("p" + j, result.get(i));
-                    j++;
+                List<Integer> finalDirections = new ArrayList<>();
+                for (int i = 0; i < result.size(); i++) {
+                    if (i % 2 == 0) {
+                        map.put("v" + ((i / 2) + 1), result.get(i));
+                    } else {
+                        map.put("p" + ((i / 2) + 1), result.get(i));
+                        finalDirections.add(directions.get(i));
+                    }
                 }
 
-                return List.of(map);
+                return new PathResult(List.of(map), finalDirections);
             }
+
+            if (visited.contains(node.getValue())) continue;
+
+            visited.add(node.getValue());
+
+
             for (Map.Entry<String, Set<String>> stringSetEntry : pom.getOrDefault(node.getValue(), Map.of()).entrySet()) {
                 if (node.getDepth() >= maxDepth) continue;
                 Tree<String> stringTree = new Tree<>(stringSetEntry.getKey(), node, node.getDepth() + 1);
@@ -257,9 +275,21 @@ public class LabelMap {
                 }
             }
 
+            if (bidirectional) {
+                for (Map.Entry<String, Set<String>> stringSetEntry : spm.getOrDefault(node.getValue(), Map.of()).entrySet()) {
+                    if (node.getDepth() >= maxDepth) continue;
+                    Tree<String> stringTree = new Tree<>(stringSetEntry.getKey(), node, node.getDepth() + 1, 1);
+                    for (String s : stringSetEntry.getValue()) {
+                        Tree<String> child = new Tree<>(s, stringTree, stringTree.getDepth() + 1, 1);
+                        stringTree.addChild(child);
+                        queue.add(child);
+                    }
+                }
+            }
+
         }
 
-        return List.of();
+        return new PathResult();
     }
 
 

@@ -38,7 +38,7 @@ public class SingleAnswer extends Answer {
         }
     }
 
-    public void getSimilarIRIsEmb(String targetEndpoint, float embThreshold) {
+    public void getSimilarIRIsEmb(String targetEndpoint, double embThreshold) {
         if (res.getSimilarIRIs().isEmpty()) {
             res.findSimilarResourceEmb(targetEndpoint, embThreshold);
         }
@@ -72,7 +72,6 @@ public class SingleAnswer extends Answer {
         Set<InstantiatedSubgraph> goodTriples = new HashSet<>();
 
         int count = 0;
-
         for (IRI iri : res.getSimilarIRIs()) {
             if (count < numberMaxOfExploredAnswers) {
 
@@ -81,7 +80,6 @@ public class SingleAnswer extends Answer {
                 retrieveAllTriples(iri, runArgs.getTargetName());
 
                 for (Triple t : iri.getTriples()) {
-
                     double similarity = 0;
                     t.retrieveIRILabels(runArgs.getTargetName());
                     t.retrieveTypes(runArgs.getTargetName());
@@ -118,6 +116,11 @@ public class SingleAnswer extends Answer {
         }
 
         return goodTriples;
+    }
+
+    @Override
+    public Set<InstantiatedSubgraph> findCorrespondingSubGraph(SparqlSelect query, RunArgs runArgs, double similarityThreshold, boolean bidirectional) {
+        return findCorrespondingSubGraph(query, runArgs, similarityThreshold);
     }
 
     public void retrieveAllTriples(IRI iri, String targetEndpoint) {

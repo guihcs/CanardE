@@ -16,7 +16,7 @@ public abstract class Answer {
     public void getSimilarIRIs(String targetEndpoint) throws Exception {
     }
 
-    public void getSimilarIRIsEmb(String targetEndpoint, float embThreshold) {
+    public void getSimilarIRIsEmb(String targetEndpoint, double embThreshold) {
     }
 
     public void getExistingMatches(String sourceEndpoint, String targetEndpoint) {
@@ -26,6 +26,10 @@ public abstract class Answer {
     }
 
     public Set<InstantiatedSubgraph> findCorrespondingSubGraph(SparqlSelect query, RunArgs runArgs, double similarityThreshold) {
+        return new HashSet<>();
+    }
+
+    public Set<InstantiatedSubgraph> findCorrespondingSubGraph(SparqlSelect query, RunArgs runArgs, double similarityThreshold, boolean bidirectional) {
         return new HashSet<>();
     }
 

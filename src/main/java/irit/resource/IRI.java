@@ -32,6 +32,7 @@ public class IRI extends Resource {
 
             String substring = value.substring(1, value.length() - 1);
             Set<String> labels1 = DatasetManager.getInstance().labelMaps.get(endpointUrl).labels(substring);
+
             for (String item : labels1) {
                 String s = item.replaceAll("\"", "").replaceAll("\\^\\^.+", "").toLowerCase();
                 Resource res = new Resource(s);
@@ -115,8 +116,10 @@ public class IRI extends Resource {
         allMatches.add(this);
 
         String s1 = value.replaceAll("\\$", "");
+
         Set<String> matched1 = DatasetManager.getInstance().labelMaps.get(sourceEndpoint).getMatched(s1);
         Set<String> matched2 = DatasetManager.getInstance().labelMaps.get(targetEndpoint).getMatched(s1);
+
 
         for (String s : matched1) {
             Resource res = new Resource(s);
@@ -144,6 +147,7 @@ public class IRI extends Resource {
         if (labels.isEmpty()) {
             retrieveLabels(targetEndpoint);
         }
+
         for (String rawLab : labels) {
 
             String label = rawLab.replaceAll("[+{}.?^]", "");
@@ -162,7 +166,7 @@ public class IRI extends Resource {
     }
 
 
-    public void findSimilarResourceEmb(String targetEndpoint, float embThreshold) {
+    public void findSimilarResourceEmb(String targetEndpoint, double embThreshold) {
         if (labels.isEmpty()) {
             retrieveLabels(targetEndpoint);
         }

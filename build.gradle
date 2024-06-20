@@ -46,6 +46,10 @@ dependencies {
 // https://mvnrepository.com/artifact/org.nd4j/nd4j-native-platform
     implementation 'org.nd4j:nd4j-native-platform:1.0.0-M2.1'
 
+    // https://mvnrepository.com/artifact/net.sourceforge.owlapi/owlapi-distribution
+    implementation 'net.sourceforge.owlapi:owlapi-distribution:4.2.8'
+
+
 
 
 }

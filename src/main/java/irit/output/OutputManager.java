@@ -13,12 +13,12 @@ import java.util.Map;
 
 public class OutputManager {
 
-    private Map<Float, ArrayList<Output>> outputs;
+    private Map<Double, ArrayList<Output>> outputs;
 
-    public void initOutputEdoal(String sourceEndpoint, String targetEndpoint, List<Float> ths, String outputEdoal) throws AlignmentException, URISyntaxException {
+    public void initOutputEdoal(String sourceEndpoint, String targetEndpoint, List<Double> ths, String outputEdoal) throws AlignmentException, URISyntaxException {
         outputs = new HashMap<>();
 
-        for (float th : ths) {
+        for (double th : ths) {
             outputs.put(th, new ArrayList<>());
             String filePath = String.format("%s/%s_%s/th_%s.edoal", outputEdoal, sourceEndpoint, targetEndpoint, String.format("%.1f", th).replaceAll(",", "_"));
             outputs.get(th).add(new EDOALOutput(sourceEndpoint, targetEndpoint, filePath));
@@ -30,7 +30,7 @@ public class OutputManager {
         }
     }
 
-    public void addToOutput(float th, SparqlSelect sq, List<SubgraphForOutput> subGraph) throws AlignmentException, URISyntaxException {
+    public void addToOutput(double th, SparqlSelect sq, List<SubgraphForOutput> subGraph) throws AlignmentException, URISyntaxException {
         for (Output o : outputs.get(th)) {
             o.addToOutput(subGraph, sq);
         }
@@ -39,7 +39,7 @@ public class OutputManager {
 
 
     public void endOutput() throws AlignmentException, IOException {
-        for (Float th : outputs.keySet()) {
+        for (Double th : outputs.keySet()) {
             for (Output o : outputs.get(th)) {
                 o.end();
             }

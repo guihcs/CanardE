@@ -25,12 +25,13 @@ public class RunArgs {
     private List<String> embeddings;
 
     private List<SparqlSelect> queries;
-    private List<Float> thresholds;
+    private List<Double> thresholds;
     private int maxMatches;
     private String simType;
     private String linkType;
 
     private float embThreshold;
+    private boolean bidirectional;
 
     public static RunArgs fromNamespace(Namespace ns) throws IOException {
         RunArgs args = new RunArgs();
@@ -56,6 +57,8 @@ public class RunArgs {
         args.simType = ns.get("simType");
         args.linkType = ns.get("linkType");
         args.embThreshold = ns.get("embThreshold");
+
+        args.bidirectional = ns.getBoolean("bidirectional");
         return args;
     }
 
@@ -65,17 +68,17 @@ public class RunArgs {
     }
 
 
-    public static List<Float> parseRange(String range) {
-        List<Float> ranges = new ArrayList<>();
+    public static List<Double> parseRange(String range) {
+        List<Double> ranges = new ArrayList<>();
         String[] split = range.split(":");
 
-        float start = Float.parseFloat(split[0]);
-        float end = start;
-        float step = 0.1f;
+        double start = Double.parseDouble(split[0]);
+        double end = start;
+        double step = 0.1f;
 
 
-        if (split.length > 1) end = Float.parseFloat(split[1]);
-        if (split.length > 2) step = Float.parseFloat(split[2]);
+        if (split.length > 1) end = Double.parseDouble(split[1]);
+        if (split.length > 2) step = Double.parseDouble(split[2]);
 
         ranges.add(start);
         start += step;
@@ -149,6 +152,11 @@ public class RunArgs {
                 .setDefault(0.85f)
                 .help("Threshold for the embedding similarity in link step.");
 
+        parser.addArgument("--bidirectional")
+                .type(Boolean.class)
+                .setDefault(false)
+                .help("Bidirectional search.");
+
         return parser;
     }
 
@@ -180,7 +188,7 @@ public class RunArgs {
         return queries;
     }
 
-    public List<Float> getThresholds() {
+    public List<Double> getThresholds() {
         return thresholds;
     }
 
@@ -203,5 +211,9 @@ public class RunArgs {
 
     public float getEmbThreshold() {
         return embThreshold;
+    }
+
+    public boolean isBidirectional() {
+        return bidirectional;
     }
 }

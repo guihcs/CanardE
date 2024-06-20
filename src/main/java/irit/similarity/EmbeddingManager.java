@@ -120,7 +120,7 @@ public class EmbeddingManager {
         for (String l1 : lab1) {
             for (String l2 : lab2) {
 
-                double sim = 1 - levenshteinDistance.apply(l1, l2) / (float) Math.max(l1.length(), l2.length());
+                double sim = 1 - levenshteinDistance.apply(l1, l2) / (double) Math.max(l1.length(), l2.length());
                 sim = sim < threshold ? 0 : sim;
                 score += sim;
 

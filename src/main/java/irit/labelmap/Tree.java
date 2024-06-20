@@ -9,12 +9,22 @@ public class Tree<V> {
     final List<Tree<V>> children;
     final Tree<V> parent;
     final int depth;
+    final int direction;
 
     public Tree(V value, Tree<V> parent, int depth) {
         this.value = value;
         this.parent = parent;
         children = new ArrayList<>();
         this.depth = depth;
+        direction = 0;
+    }
+
+    public Tree(V value, Tree<V> parent, int depth, int direction) {
+        this.value = value;
+        this.parent = parent;
+        children = new ArrayList<>();
+        this.depth = depth;
+        this.direction = direction;
     }
 
     public V getValue() {
@@ -31,6 +41,10 @@ public class Tree<V> {
 
     public Tree<V> getParent() {
         return parent;
+    }
+
+    public int getDirection() {
+        return direction;
     }
 }
 
